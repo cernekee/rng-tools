@@ -3,7 +3,7 @@
 # Copyright (c) 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
 # Copyright (c) 2002 by Viral Shah <viral@debian.org>
 # Distributed under the GNU General Public License version 2
-# $Id: rng-tools.postinst,v 1.2 2004/02/09 03:23:31 hmh Exp $
+# $Id: rng-tools.postinst,v 1.3 2004/02/23 14:34:39 hmh Exp $
 
 set -e
 
@@ -28,12 +28,19 @@ export PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 case "$1" in
   configure)
-	if  [ ! -c /dev/.devfsd ] && [ ! -c /dev/hwrandom ]; then
-	    (cd /dev && ./MAKEDEV hwrandom || true)
-	    [ -c /dev/hwrandom ] || {
-	    	echo "Warning: could not create /dev/hwrandom." >&2
-	    }
+	if  [ ! -c /dev/.devfsd -a ! -c /dev/hwrandom ]; then
+	    if [ -c /dev/intel_rng ] ; then
+	    	echo "Renaming /dev/intel_rng to /dev/hwrandom..." >&2
+	    	mv /dev/intel_rng /dev/hwrandom
+	    else
+		(cd /dev && ./MAKEDEV hwrandom || ./MAKEDEV intel_rng || true)
+		[ -c /dev/intel_rng ] && mv /dev/intel_rng /dev/hwrandom
+		[ -c /dev/hwrandom ] || {
+		  echo "Warning: could not create /dev/hwrandom." >&2
+		}
+	    fi
 	fi
+	true
    ;;
 esac
 

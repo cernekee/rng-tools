@@ -1,3 +1,10 @@
+rng-tools (1.0-2) unstable; urgency=low
+
+  * Add ugly hack workaround until MAKEDEV support for hwrandom goes in
+    (refer to #234366); This closes: #233656.
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Mon, 23 Feb 2004 11:11:51 -0300
+
 rng-tools (1.0-1) unstable; urgency=low
 
   * New maintainer (closes: #214926);
