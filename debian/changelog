@@ -1,3 +1,10 @@
+rng-tools (2-unofficial-mt.8-1) unstable; urgency=low
+
+  * New unofficial version
+    * rngd.c: use the GNU version of strerror_r(). Argh!
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Sat,  6 Nov 2004 15:18:49 -0200
+
 rng-tools (2-unofficial-mt.7-1) unstable; urgency=low
 
   * New unofficial version
