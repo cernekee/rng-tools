@@ -100,14 +100,17 @@ static void random_add_entropy(void *buf, size_t size)
 		int size;
 		unsigned char data[size];
 	} entropy;
+	char errbuf[STR_BUF_LEN];
 
 	entropy.ent_count = (int)(arguments->rng_entropy * size * 8);
 	entropy.size = size;
 	memcpy(entropy.data, buf, size);
 	
 	if (ioctl(random_fd, RNDADDENTROPY, &entropy) != 0) {
+		strerror_r(errno, errbuf, sizeof(errbuf));
+		errbuf[sizeof(errbuf)-1]=0;
 		message(LOG_ERR, "RNDADDENTROPY failed: %s",
-			strerror(errno));
+			errbuf);
 		exitstatus = EXIT_OSERR;
 		kill(masterprocess, SIGTERM);
 		pthread_exit(NULL);

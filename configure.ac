@@ -17,7 +17,7 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-AC_INIT(rng-tools, 1.1-unofficial-mt.2, [rng-tools@packages.debian.org])
+AC_INIT(rng-tools, 1.1-unofficial-mt.3, [rng-tools@packages.debian.org])
 AC_PREREQ(2.57)
 AC_CONFIG_SRCDIR([rngd.c])
 AM_INIT_AUTOMAKE([gnu])
@@ -50,7 +50,6 @@ AC_SUBST(LIB_PTHREAD)
 dnl -------------------------------------
 dnl Checks for optional library functions
 dnl -------------------------------------
-AC_CHECK_FUNCS(flock)
 
 dnl -----------------
 dnl Configure options

@@ -20,6 +20,9 @@ STILL NOT SENT UPSTREAM:
 	* Configure /dev/random, /dev/hwrandom and pidfile
 	  location using autoconf, to avoid hardcoded defaults;
 	* Kill warnings on stats.c and rng-test.c on ia64
+	* Better pidfile locking, always use flock()
+	* strerror() is not threadsafe, so don't use it inside
+	  threads.  Use strerror_r instead.
 
 SENT AND WAITING MERGE:
 	* pidfile support for background mode;
