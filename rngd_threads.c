@@ -86,7 +86,7 @@ void *test_malloc(void *p) {
 #define BUFFIFO_INIT(fifo) do { \
 	pthread_mutex_init(&buffer_queues.fifo.mutex, NULL); \
 	buffer_queues.fifo.head = buffer_queues.fifo.tail = 0; \
-	buffer_queues.fifo.data = test_malloc(calloc(rng_buffers, \
+	buffer_queues.fifo.data = test_malloc(calloc(GETBUFFIFO_SIZE, \
 		sizeof(*buffer_queues.fifo.data))); \
 } while (0)
 

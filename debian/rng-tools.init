@@ -4,7 +4,7 @@
 #		Copr. 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
 #		Copr. 2002 by Viral Shah <viral@debian.org>
 #
-# $Id: rng-tools.init,v 1.6.2.7 2005/02/10 06:52:17 hmh Exp $
+# $Id: rng-tools.init,v 1.6.2.8 2005/02/15 10:16:23 hmh Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/rngd
@@ -25,14 +25,14 @@ set -e
 finddevice () {
 	[ -c "${HWRNGDEVICE}" ] && return 0
 	for i in ${DEVICELIST}; do
-		[ -c "/dev/$i" ] && {
+		if [ -c "/dev/$i" ] ; then
 			HRNGDEVICE="/dev/$i"
 			return 0
-		}
-		[ -c "/dev/misc/$i"] && {
+		fi
+		if [ -c "/dev/misc/$i" ] ; then
 			HRNGDEVICE="/dev/misc/$i"
 			return 0
-		}
+		fi
 	done
 
 	echo "(Hardware RNG device inode not found)"

@@ -1,3 +1,13 @@
+rng-tools (2-unofficial-mt.9-3) experimental; urgency=low
+
+  * Sync with 2-unofficial-mt.8-5
+  * Fix initscript to be POSIX-compliant and remove typo (closes: #295321)
+  * Fix bad off-by-one error on the FIFO queue allocation that has been
+    in the unofficial versions since forever.  I really need to use
+    valgrind more often.
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue, 15 Feb 2005 08:15:48 -0200
+
 rng-tools (2-unofficial-mt.9-2) experimental; urgency=low
 
   * Sync with 2-unofficial-mt.8-3:
