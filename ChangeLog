@@ -32,6 +32,7 @@ STILL NOT SENT UPSTREAM:
 	  for pointer arithmetric
 
 	Other:
+	* rngd.c: use option grouping on Argp options vector
 	* rngd.h, rngd.c, rngd_linux.c: precalculate poll timeout
 	  on init_kernel_rng.  Now arguments->poll_timeout is an int
 	  instead of a double
@@ -67,6 +68,8 @@ STILL NOT SENT UPSTREAM:
 	  that is thread-safe
 	* rngd.c, rngd_linux.c, rngd_entsource.c, rngd_threads.c, 
 	  rngd_signal.c: use message_strerr()
+	* rngd.c, rngd_entsource.c, rngd_linux.c, rngd_threads.c, stats.c,
+	  util.c: add many assert() calls
 
 Tue May 09 2004  Henrique de Moraes Holschuh <hmh@debian.org>
 

@@ -46,6 +46,8 @@
 #include <pthread.h>
 #include <signal.h>
 
+#include <assert.h>
+
 #include "rngd.h"
 #include "fips.h"
 #include "stats.h"
@@ -56,7 +58,7 @@
 #include "rngd_linux.h"
 
 /* Kernel output device */
-static int random_fd;
+static int random_fd = -1;
 
 /* Kernel RNG parameters */
 static long int random_pool_size = 4096;
@@ -79,9 +81,11 @@ static int get_rng_proc_parameter(const char* param, long int *value)
 	long int curvalue;
 	char procname[512];
 
-	procname[sizeof(procname)-1] = 0;
+	assert(param != NULL && value != NULL);
+
 	snprintf(procname, sizeof(procname), "/proc/sys/kernel/random/%s",
 		 param);
+	procname[sizeof(procname)-1] = 0;
 	if ( ((fp = fopen(procname, "r")) != NULL) &&
 		(fscanf(fp, "%ld", &curvalue) == 1) ) {
 		*value = curvalue;
@@ -105,9 +109,11 @@ static int set_rng_proc_parameter(const char* param, long int *value)
 	long int curvalue;
 	char procname[512];
 
-	procname[sizeof(procname)-1] = 0;
+	assert(param != NULL, value != NULL);
+
 	snprintf(procname, sizeof(procname), "/proc/sys/kernel/random/%s", 
 		 param);
+	procname[sizeof(procname)-1] = 0;
 	if ( ((fp = fopen(procname, "r+")) != NULL) &&
 		 (fscanf(fp, "%ld", &curvalue) == 1) ) {
 		if ( *value > curvalue ) {
@@ -137,6 +143,8 @@ static int set_rng_proc_parameter(const char* param, long int *value)
  */
 void init_kernel_rng( void )
 {
+	assert(random_fd == -1);
+
 	random_fd = open(arguments->random_name, O_RDWR);
 	if (random_fd == -1) {
 		message_strerr(LOG_ERR, errno, "can't open %s",
@@ -182,6 +190,8 @@ static void random_add_entropy(void *buf, size_t size)
 		int size;
 		unsigned char data[size];
 	} entropy;
+
+	assert(buf != NULL);
 
 	entropy.ent_count = (int)(arguments->rng_entropy * size * 8);
 	entropy.size = size;

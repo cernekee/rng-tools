@@ -1,5 +1,4 @@
-$Id: TODO,v 1.6.2.26 2004/10/27 14:11:41 hmh Exp $
-
+$Id: TODO,v 1.6.2.27 2004/11/02 13:45:37 hmh Exp $
 
 ** Modular arch design
 
@@ -19,6 +18,9 @@ $Id: TODO,v 1.6.2.26 2004/10/27 14:11:41 hmh Exp $
 Command line:
   rngd <input type> [input type options]
 
+
+* Maybe define NDEBUG to remove assert() from
+  the packaged binary?
 
 Nextc:::
  - detect/store overflow on stat counters

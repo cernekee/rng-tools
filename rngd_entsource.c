@@ -42,6 +42,8 @@
 #include <pthread.h>
 #include <signal.h>
 
+#include <assert.h>
+
 #include "rngd.h"
 #include "fips.h"
 #include "stats.h"
@@ -59,7 +61,7 @@ static volatile int pausesource = 0;	/* Pause reading from entropy source */
 static fips_ctx_t fipsctx;		/* Context for the FIPS tests */
 
 /* Data source */
-static int rng_fd;			/* rng data source */
+static int rng_fd = -1;			/* rng data source */
 static int rng_source_timeout = 10;	/* rng data source timeout (s) */
 
 /* RNG data source thread waits on this condition */
@@ -83,6 +85,8 @@ static int xread(void *buf, size_t size, unsigned int abortonsigalrm)
 {
 	size_t off = 0;
 	ssize_t r;
+
+	assert(buf != NULL);
 
 	while (size > 0) {
 		do {
@@ -129,6 +133,8 @@ static int xread(void *buf, size_t size, unsigned int abortonsigalrm)
 void init_entropy_source( void )
 {
 	unsigned char tempbuf[4];
+
+	assert(rng_fd == -1);
 
 	rng_source_timeout = arguments->rng_timeout;
 
