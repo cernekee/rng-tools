@@ -2,7 +2,7 @@ Source: rng-tools
 Section: utils
 Priority: optional
 Maintainer: Henrique de Moraes Holschuh <hmh@debian.org>
-Build-Depends: debhelper (>> 4)
+Build-Depends: debhelper (>> 4), autotools-dev
 Standards-Version: 3.6.1
 
 Package: rng-tools

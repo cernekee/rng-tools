@@ -1,3 +1,23 @@
+rng-tools (2-unofficial-mt.9-1) experimental; urgency=low
+
+  * New unofficial version:
+    * Support for different input drivers
+    * Add new high-performance (several Mbit/s) VIA PadLock TRNG
+      user-space driver.  This work was sponsored by mekensleep.com,
+      in particular by Loic Dachary.  Mekensleep gave me unlimited
+      access to a VIA Nehemiah system that they bought for this purpose,
+      and which I am told will be available for the general community
+      after the rngd work is stablized.
+    * --trng=intel renamed to --trng=intelfwh (because Intel may show up
+      with something to compete with VIA's PadLock security engine)
+    * --trng=via renamed to --trng=viakernel
+  * Add NEWS.Debian file to report user-visible changes in behaviour
+  * Minor README.Debian improvements and fixes
+  * Detect running kernel version, and work around kernel 2.4 bugs in
+    entropy accounting
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue,  8 Feb 2005 23:05:24 -0200
+
 rng-tools (2-unofficial-mt.8-2) unstable; urgency=low
 
   * Install modprobe.d file mapping char-major-10-183, /dev/hwrandom,

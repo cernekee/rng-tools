@@ -1,5 +1,5 @@
 rng-tools for Debian
-$Id: README.Debian,v 1.6.2.8 2004/10/24 13:01:10 hmh Exp $
+$Id: README.Debian,v 1.6.2.9 2004/12/30 10:55:28 hmh Exp $
 =====================================================
 
 NOTICE:
@@ -34,7 +34,7 @@ to the hw_random device, since i810_rng development appears to have stopped.
 The initscript expects to read random data from /dev/hwrandom, and tries to
 feed entropy back to /dev/random.  It also knows about: /dev/hw_random, 
 /dev/misc/hw_random, /dev/intel_rng, /dev/misc/i810_rng, /dev/i810_rng,
-and will use the first it finds.
+and will use the first one it finds.
 
 /dev/hwrandom is a character device, major 10, minor 183 for the usual Linux
 hardware RNG drivers.
@@ -145,14 +145,15 @@ Boards usually do NOT have a 82802AB/AC FWH.
 
 http://developer.intel.com/design/chipsets/rng/CRIwp.htm has interesting
 documentation on how the RNG behaves.  An important point to know is that it
-has a variable bit rate, and that its entrpy (H) is better than 0.999.
+has a variable bit rate, and that its entropy (H) is better than 0.999.
 An alternate URL for that document is
 http://www.cryptography.com/resources/whitepapers/IntelRNG.pdf
 
-Measurements on a D875PBZ show that you can expect an average of 24kbit/s of
-random data from the 2.4.24 kernel driver (documentation suggests this should
-be on the order of 75kbit/s).  The kernel driver will eat up a LOT of "system
-time", I hope this can be corrected in future versions of the driver.
+Measurements on an Intel Desktop Board D875PBZ show that you can expect an
+average of 24kbit/s of random data from the 2.4.24 kernel driver (documentation
+suggests this should be on the order of 75kbit/s).  The kernel driver will eat
+up a LOT of "system time", I hope this can be corrected in future versions of
+the driver.
 
 /dev/random output in the test system archived an average of 120kbit/s with
 rngd active, probably due to the entropy accounting bugs in most 2.4 kernels.
@@ -176,5 +177,11 @@ http://www.cryptography.com/resources/whitepapers/VIA_rng.pdf
 The suggested -H paremeter for the Padlock TRNG is 0.75 if the whitener is
 disabled, or 0.98 if the withener is enabled.  You're strongly advised to run
 the TRNG with the whitener enabled.
+
+For safety reasons, rngd always use 0.75 for the VIA TRNG entropy by default.
+It always enables the whitener, and it discards consecutive random bits from
+the TRNG, because there is a measurable correlation among consecutive bits.
+This means that rngd will be probably "slower" than other VIA TRNG drivers,
+but it will be safer for cryptographic use.
 
  -- Henrique de Moraes Holschuh <hmh@debian.org>
