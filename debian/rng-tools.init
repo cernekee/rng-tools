@@ -4,34 +4,43 @@
 #		Copr. 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
 #		Copr. 2002 by Viral Shah <viral@debian.org>
 #
-# $Id: rng-tools.init,v 1.4 2004/02/09 03:23:31 hmh Exp $
+# $Id: rng-tools.init,v 1.6 2004/03/09 20:30:13 hmh Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/rngd
 NAME=rngd
 DESC="Hardware RNG entropy gatherer daemon"
-DEVICE=/dev/hwrandom
+PIDFILE=/var/run/rngd.pid
 
-test -f $DAEMON || exit 0
+HRNGDEVICE=/dev/hwrandom
+RNGDOPTIONS=
+[ -r /etc/default/rng-tools ] && . /etc/default/rng-tools
+
+test -f ${DAEMON} || exit 0
 
 set -e
 
-START="--start --quiet --pidfile /var/run/$NAME.pid --exec $DAEMON"
+finddevice () {
+	for i in ${HRNGDEVICE} /dev/hwrandom /dev/hw_random /dev/misc/hw_random ; do
+		[ -c "$i" ] && {
+			HRNGDEVICE="$i"
+			return 0
+		}
+	done
 
-verify_device () {
-	[ -c "$DEVICE" ] || {
-		echo "Missing $DEVICE, please create it with:" >&2
-		echo "mknod $DEVICE c 10 183" >&2
-		exit 1
-	}
+	echo "(Hardware RNG device inode not found)"
+	echo "$0: Cannot find a hardware RNG device to use." >&2
+	exit 1
 }
 
+START="--start --quiet --pidfile ${PIDFILE} --exec ${DAEMON}"
 case "$1" in
   start)
-  	verify_device
 	echo -n "Starting $DESC: "
+	finddevice
+	START="${START} -- -r ${HRNGDEVICE} ${RNGDOPTIONS}"
 	if start-stop-daemon ${START} >/dev/null 2>&1 ; then
-		echo "$NAME."
+		echo "${NAME}."
 	else
 		if start-stop-daemon --test ${START} >/dev/null 2>&1; then
 			echo "(failed)."
@@ -44,9 +53,9 @@ case "$1" in
 	;;
   stop)
 	echo -n "Stopping $DESC: "
-	if start-stop-daemon --stop --quiet --pidfile /var/run/$NAME.pid \
-		--startas $DAEMON >/dev/null 2>&1 ; then
-			echo "$NAME."
+	if start-stop-daemon --stop --quiet --pidfile ${PIDFILE} \
+		--startas ${DAEMON} >/dev/null 2>&1 ; then
+			echo "${NAME}."
 	else
 		echo "(failed)."
 	fi
@@ -57,8 +66,8 @@ case "$1" in
 	  i=5
 	  while [ $i -gt 0 ] ; do
 	  	if start-stop-daemon --start --test \
-		   --pidfile /var/run/$NAME.pid \
-		   --exec $DAEMON >/dev/null 2>&1 ; then
+		   --pidfile ${PIDFILE} \
+		   --exec ${DAEMON} >/dev/null 2>&1 ; then
 		       break
 		fi
 		sleep 2s

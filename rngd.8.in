@@ -13,6 +13,7 @@ rngd \- Check and feed random data from hardware device to kernel random device
 [\fB\-r\fR, \fB\-\-rng-device=\fIfile\fR]
 [\fB\-s\fR, \fB\-\-random-step=\fInnn\fR]
 [\fB\-t\fR, \fB\-\-timeout=\fInnn\fR]
+[\fB\-H\fR, \fB\-\-rng\-entropy=\fIn.nnn\fR]
 [\fB\-?\fR, \fB\-\-help\fR]
 [\fB\-V\fR, \fB\-\-version\fR]
 .RI
@@ -39,6 +40,11 @@ The \fB\-o\fR or \fB\-\-random-device\fR options can be used to select
 an alternate entropy output device, besides the default /dev/random.
 Note that this device must support the Linux kernel /dev/random 
 ioctl API.
+.PP
+The \fB\-H\fR or \fB\-\-rng\-entropy\fR options can be used to adjust the
+number of bits of entropy per bit of data received from the input source. For
+most TRNGs, this number is very close to 1.0, 0.998 and 0.999 being typical
+values.
 
 .SH OPTIONS
 .TP
@@ -55,6 +61,11 @@ Kernel device used for random number output
 \fB\-r\fI file\fR, \fB\-\-rng-device=\fIfile\fR
 Kernel device used for random number input
 (default: /dev/hwrandom)
+.TP
+\fB\-H \fIn.nnn\fR, \fB\-\-rng\-entropy=\fIn.nnn\fR
+Bits of entropy per bit of input data.  This is a floating point
+number between 0 and 1 (inclusive).
+(default: 1.0)
 .TP
 \fB\-s\fI nnn\fR, \fB\-\-random-step=\fInnn\fR
 Number of bytes written to random-device at a time (default: 64)
@@ -74,4 +85,6 @@ Philipp Rumpf \- prumpf@mandrakesoft.com
 Jeff Garzik \- jgarzik@mandrakesoft.com
 .br
 Matt Sottek
+.br
+Henrique M. Holschuh \- hmh@debian.org
 

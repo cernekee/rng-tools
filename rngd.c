@@ -79,6 +79,9 @@ static struct argp_option options[] = {
 	{ "pidfile", 'p', "file", 0,
 	  "Path to file to write PID to in daemon mode (default: /var/run/rngd.pid)" },
 
+	{ "rng-entropy", 'H', "nnn", 0,
+	  "Entropy per bit of the hardware RNG (default: 1), 0 < nnn <= 1" },
+
 	{ 0 },
 };
 
@@ -91,6 +94,8 @@ struct arguments {
 	double poll_timeout;
 
 	int daemon;
+
+	double rng_entropy;
 };
 
 static struct arguments default_arguments = {
@@ -100,6 +105,7 @@ static struct arguments default_arguments = {
 	poll_timeout:	60,
 	random_step:	64,
 	daemon:		1,
+	rng_entropy:	1.0,
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -136,6 +142,15 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 			argp_usage(state);
 		break;
 
+	case 'H': {
+		float H;
+		if ((sscanf(arg, "%f", &H) == 0) || (H <= 0) || (H > 1))
+			argp_usage(state);
+		else
+			arguments->rng_entropy = H;
+		break;
+	}
+
 	default:
 		return ARGP_ERR_UNKNOWN;
 	}
@@ -158,6 +173,7 @@ static int am_daemon;
 		syslog((priority), fmt, ##args); \
 	} else { \
 		fprintf(stderr, fmt, ##args); \
+		fprintf(stderr, "\n"); \
 	} \
 } while (0)
 
@@ -236,7 +252,7 @@ void get_lock(const char* pidfile_name)
 *  140-1 4.11.2.
 */
 
-static int poker[16], runs[12], last16;
+static int poker[16], runs[12], last32;
 static int ones, rlength = -1, current_bit, longrun;
 
 /*
@@ -285,12 +301,15 @@ static int rng_run_fips_test (unsigned char *buf)
 	int i, j;
 	int rng_test = 0;
 
-	for (i=0; i<FIPS_THRESHOLD; i += 2) {
-		int new16 = buf[i] | ( buf[i+1] << 8 );
-		if (new16 == last16) rng_test |= 16;
-		last16 = new16;
+	for (i=0; i<FIPS_THRESHOLD; i += 4) {
+		int new32 = buf[i] | ( buf[i+1] << 8 ) | 
+			    ( buf[i+2] << 16 )  | ( buf[i+3] << 24 );
+		if (new32 == last32) rng_test |= 16;
+		last32 = new32;
 		rng_fips_test_store(buf[i]);
 		rng_fips_test_store(buf[i+1]);
+		rng_fips_test_store(buf[i+2]);
+		rng_fips_test_store(buf[i+3]);
 	}
 
 	/* add in the last (possibly incomplete) run */
@@ -345,18 +364,25 @@ static void xread(int fd, void *buf, size_t size)
 	size_t off = 0;
 	ssize_t r;
 
-	while (size && (r = read(fd, buf + off, size)) > 0) {
+	while (size) {
+		r = read(fd, buf + off, size);
+		if (r < 0) {
+			if ((errno == EAGAIN) || (errno == EINTR)) continue;
+			break;
+		}
 		off += r;
 		size -= r;
 	}
 
 	if (size) {
-		message(LOG_DAEMON|LOG_ERR, "read error\n");
-		exit(1);
+		message(LOG_DAEMON|LOG_ERR, "error reading rng device: %s", strerror(errno));
+		message(LOG_DAEMON|LOG_ERR, "terminating rngd...");
+		exit(EX_OSERR);
 	}
 }
 
-static void random_add_entropy(int fd, void *buf, size_t size)
+static void random_add_entropy(int fd, void *buf, size_t size,
+			       double rng_entropy)
 {
 	struct {
 		int ent_count;
@@ -364,14 +390,15 @@ static void random_add_entropy(int fd, void *buf, size_t size)
 		unsigned char data[size];
 	} entropy;
 
-	entropy.ent_count = size * 8;
+	entropy.ent_count = (int)(rng_entropy * size * 8);
 	entropy.size = size;
 	memcpy(entropy.data, buf, size);
 	
 	if (ioctl(fd, RNDADDENTROPY, &entropy) != 0) {
-		message(LOG_DAEMON|LOG_ERR, "RNDADDENTROPY failed: %s\n",
+		message(LOG_DAEMON|LOG_ERR, "RNDADDENTROPY failed: %s",
 			strerror(errno));
-		exit(1);
+		message(LOG_DAEMON|LOG_ERR, "terminating rngd...");
+		exit(EX_OSERR);
 	}
 }
 
@@ -394,7 +421,8 @@ static void random_sleep(int fd, double poll_timeout)
 }
 
 static void do_loop(int rng_fd, int random_fd, int random_step,
-		    double poll_timeout)
+		    double poll_timeout,
+		    double rng_entropy)
 {
 	unsigned char buf[FIPS_THRESHOLD];
 	unsigned char *p;
@@ -405,14 +433,14 @@ static void do_loop(int rng_fd, int random_fd, int random_step,
 
 		fips = rng_run_fips_test(buf);
 		if (fips) {
-			message(LOG_DAEMON|LOG_ERR, "failed fips test: %02x\n", fips);
+			message(LOG_DAEMON|LOG_ERR, "failed fips test: 0x%02x", fips);
 			sleep(1);
 			continue;
 		}
 
 		for (p = buf; p + random_step <= &buf[sizeof buf];
 		     p += random_step) {
-			random_add_entropy(random_fd, p, random_step);
+			random_add_entropy(random_fd, p, random_step, rng_entropy);
 			random_sleep(random_fd, poll_timeout);
 		}
 	}
@@ -429,11 +457,12 @@ static void discard_initial_data(int rng_fd)
 	unsigned char tempbuf[4];
 	xread (rng_fd, tempbuf, sizeof tempbuf);
 
-	/* Bootstrap FIPS test, sacrificing 16 bits of possibly
-	 * good random data.  Better this than risk 2498 bytes 
+	/* Bootstrap FIPS test, sacrificing 32 bits of possibly
+	 * good random data.  Better this than risk 2500 bytes 
 	 * of wastage if the first FIPS test fails. */
-	xread (rng_fd, tempbuf, 2);
-	last16 = tempbuf[0] | (tempbuf[1] << 8);
+	xread (rng_fd, tempbuf, sizeof tempbuf);
+	last32 = tempbuf[0] | (tempbuf[1] << 8) | 
+		(tempbuf[2] << 16) | (tempbuf[3] << 24);
 }
 
 int main(int argc, char **argv)
@@ -451,7 +480,7 @@ int main(int argc, char **argv)
 	rng_fd = open(arguments->rng_name, O_RDONLY);
 
 	if (rng_fd < 0) {
-		message(LOG_DAEMON|LOG_ERR, "can't open RNG file %s: %s\n",
+		message(LOG_DAEMON|LOG_ERR, "can't open RNG file %s: %s",
 			arguments->rng_name, strerror(errno));
 		return EX_USAGE;
 	}
@@ -459,7 +488,7 @@ int main(int argc, char **argv)
 	random_fd = open(arguments->random_name, O_RDWR);
 
 	if (random_fd < 0) {
-		message(LOG_DAEMON|LOG_ERR, "can't open random file %s: %s\n",
+		message(LOG_DAEMON|LOG_ERR, "can't open random file %s: %s",
 			arguments->random_name, strerror(errno));
 		return EX_USAGE;
 	}
@@ -469,7 +498,7 @@ int main(int argc, char **argv)
 		get_lock(arguments->pidfile_name);
 
 		if (daemon(0, 0) < 0) {
-			message(LOG_DAEMON|LOG_ERR, "can't daemonize: %s\n",
+			message(LOG_DAEMON|LOG_ERR, "can't daemonize: %s",
 					strerror(errno));
 			return EX_OSERR;
 		}
@@ -487,7 +516,8 @@ int main(int argc, char **argv)
 	discard_initial_data(rng_fd);
 
 	do_loop(rng_fd, random_fd, arguments->random_step,
-		arguments->poll_timeout ? : -1.0);
+		arguments->poll_timeout ? : -1.0,
+		arguments->rng_entropy);
 
 	return EX_OK;
 }

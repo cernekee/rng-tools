@@ -1,3 +1,18 @@
+rng-tools (1.0-3) unstable; urgency=low
+
+  * Remove all hand-holding about /dev/hwrandom from initscript.
+    Instead, try to detect which device we should be using. Also,
+    add an /etc/default/rng-tools, and use it (closes: #235045);
+  * Add some helpful hints to README.Debian
+  * Change n for the continuous run test to 32, due to AMD's RNG. This
+    is still FIPS 140-1 compliant for smaller block RNGs, anyway.  It
+    will reduce false positives on Intel's RNG as well;
+  * Add --rng-entropy (-H) option;
+  * Add note in description about what this package is about.  Add
+    explanation about PRNGs and TRNGs in README.Debian (closes: #235752).
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue,  9 Mar 2004 17:16:28 -0300
+
 rng-tools (1.0-2) unstable; urgency=low
 
   * Add ugly hack workaround until MAKEDEV support for hwrandom goes in

@@ -11,10 +11,15 @@ Depends: ${shlibs:Depends}, makedev | devfsd
 Provides: intel-rng-tools
 Replaces: intel-rng-tools
 Conflicts: intel-rng-tools
-Description: Daemon to use the Intel/AMD/VIA Hardware RNG
- This daemon feeds data from the hwrandom device (which currently
- supports the hardware Random Number Generators in recent Intel/AMD/VIA
- chipsets) to the kernel's random number entropy pool, after first
- checking the data to ensure that it is properly random.
+Description: Daemon to use the Intel/AMD/VIA Hardware TRNG
+ The rngd daemon feeds truly random data from the hwrandom device (which
+ currently supports the hardware True Random Number Generators (TRNG) in recent
+ Intel/AMD/VIA chipsets) to the kernel's pseudo-random number generator (PRNG)
+ entropy pool, after first checking the data to ensure that it is properly 
+ random.
+ .
+ This increases the bandwidth of the /dev/random device, from a source that
+ does not depend on outside activity.  It may also improve the quality
+ (entrophy) of the randomness of /dev/random.
  .
  The hw_random kernel module is required to use this package.

@@ -1,12 +1,12 @@
-$Id: TODO,v 1.4 2004/02/09 03:47:28 hmh Exp $
+$Id: TODO,v 1.6 2004/03/09 20:20:16 hmh Exp $
 
 High:
  - MAKEDEV hw_random
  - change debian/rules to ship docs, devfs crap
+ - increase FIPS bandwidth by double-buffering FIPS-approved data
 
 Low:
  - Make sure failing FIPS does not hog CPU
  - devfs stuff
- - increase FIPS bandwidth by double-buffering FIPS-approved data
  - protect the FIPS-approved entropy buffer against attacks (randomize
    feed to kernel?)
