@@ -269,17 +269,14 @@ static void random_add_entropy(int fd, void *buf, size_t size,
 
 static void random_sleep(int fd, double poll_timeout)
 {
-	struct {
-		int ent_count;
-		int pool_size;
-	} pool = { 0, };
+	int ent_count;
 	struct pollfd pfd = {
 		fd:	fd,
 		events:	POLLOUT,
 	};
 
-	if (ioctl(fd, RNDGETPOOL, &pool) == 0 &&
-	    pool.ent_count/8 < pool.pool_size*4)
+	if (ioctl(fd, RNDGETENTCNT, &ent_count) == 0 &&
+	    ent_count < 2048)
 		return;
 	
 	poll(&pfd, 1, 1000.0 * poll_timeout);

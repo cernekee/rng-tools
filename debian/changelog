@@ -1,3 +1,10 @@
+rng-tools (1.1-2) unstable; urgency=low
+
+  * Quick dirty-and-fast fix for 2.6 RNDGETPOOL interface
+    brokenness.  A better fix is in experimental (closes: #243319)
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Mon, 10 May 2004 20:30:36 -0300
+
 rng-tools (1.1-1) unstable; urgency=low
 
   * New upstream source:
