@@ -68,6 +68,8 @@
  * Globals
  */
 
+#define	RNGD_STAT_SLEEP_TIME 3600
+
 /* Statistics */
 struct rng_stats rng_stats;
 
@@ -96,7 +98,8 @@ error_t argp_err_exit_status = EXIT_USAGE;
 static char doc[] =
 	"Check and feed random data from hardware device to kernel entropy pool.\n";
 
-#define ARGP_RNGD_CMDLINE_TRNG 0x81
+#define ARGP_RNGD_CMDLINE_TRNG		0x81
+#define ARGP_RNGD_CMDLINE_TIMEOUT	0x82
 	
 static struct argp_option options[] = {
 	{ "foreground",	'f', 0, 0, "Do not fork and become a daemon" },
@@ -112,11 +115,17 @@ static struct argp_option options[] = {
 	{ "random-step", 's', "n", 0,
 	  "Number of bytes written to random-device at a time (default: 64), 8 <= n <= " STR(FIPS_RNG_BUFFER_SIZE) ", n must be even" },
 
+	{ "timeout", ARGP_RNGD_CMDLINE_TIMEOUT, "n", 0,
+	  "Deprecated, same as --feed-interval" },
+	
+	{ "feed-interval", 't', "n", 0,
+	  "When the entropy pool is full, write to random-device every n seconds.  Set to zero to disable (default: 60)" },
+
 	{ "fill-watermark", 'W', "n[%]", 0,
 	  "Do not stop feeding entropy to random-device until at least n bits of entropy are available in the pool. n can be the absolute number of bits, or a percentage of the pool size (default: 50%), 0 <= n <= kernel random pool size, or 0% <= n <= 100%" },
 
-	{ "timeout", 't', "n", 0,
-	  "Interval written to random-device when the entropy pool is full, in seconds (default: 60)" },
+	{ "rng-timeout", 'T', "n", 0,
+	  "Wait at most n seconds for the random data source to provide some initial data.  Set to zero to wait forever (default: 10)" },
 
 	{ "pidfile", 'p', "file", 0,
 	  "Path to file to write PID to in daemon mode (default: " PIDFILE ")" },
@@ -136,9 +145,10 @@ static struct arguments default_arguments = {
 	.rng_name	= DEVHWRANDOM,
 	.random_name	= DEVRANDOM,
 	.pidfile_name	= PIDFILE,
-	.poll_timeout	= 60,
+	.feed_interval	= 60,
 	.random_step	= 64,
 	.fill_watermark = -50,
+	.rng_timeout	= 10,
 	.daemon		= 1,
 	.rng_entropy	= 1.0,
 	.rng_buffers	= 3,
@@ -220,6 +230,11 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 	case 'p':
 		arguments->pidfile_name = arg;
 		break;
+
+	case ARGP_RNGD_CMDLINE_TIMEOUT: 	/* --timeout */
+		message (LOG_WARNING, "Warning: --timeout is deprecated, "
+			 "use --feed-interval instead");
+		/* fallthrough */
 	case 't': {
 		long int n;
 		char *p;
@@ -227,7 +242,18 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 		if ((p == arg) || (*p != 0) || (n < 0) || (n >= INT_MAX))
 			argp_usage(state);
 		else
-			arguments->poll_timeout = n;
+			arguments->feed_interval = n;
+		break;
+	}
+
+	case 'T': {
+		long int n;
+		char *p;
+		n = strtol(arg, &p, 10);
+		if ((p == arg) || (*p != 0) || (n < 0) || (n >= INT_MAX))
+			argp_usage(state);
+		else
+			arguments->rng_timeout = n;
 		break;
 	}
 
@@ -562,12 +588,12 @@ int main(int argc, char **argv)
 	 * All we can do now is spin around waiting for a hit to the head.
 	 * Dump stats every hour, and at exit...
 	 */
-	sleeptime = 3600;
+	sleeptime = RNGD_STAT_SLEEP_TIME;
 	while (!gotsigterm) {
 		sleeptime = sleep(sleeptime);
 		if ((sleeptime == 0) || gotsigusr1 || gotsigterm) {
 			dump_rng_stats();
-			sleeptime = 3600;
+			sleeptime = RNGD_STAT_SLEEP_TIME;
 			gotsigusr1 = 0;
 		}
 	}

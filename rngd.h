@@ -47,8 +47,10 @@ struct arguments {
 	int random_step;
 	int fill_watermark;	/* n<0: percentage of poolsize, 
 				   n>=0: number of bits */
-	int poll_timeout;
+	int feed_interval;
 
+	int rng_timeout;
+	
 	int daemon;
 
 	double rng_entropy;

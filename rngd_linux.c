@@ -34,10 +34,10 @@
 #include <errno.h>
 #include <syslog.h>
 #include <sys/ioctl.h>
-#include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/select.h>
 #include <sys/time.h>
 #include <time.h>
 #include <linux/types.h>
@@ -59,7 +59,7 @@ static int random_fd;
 /* Kernel RNG parameters */
 static long int random_pool_size = 4096;
 static long int random_pool_fill_watermark = 2048;
-static int device_poll_timeout;
+static int random_device_timeout; /* seconds */
 
 /* RNG data sink thread waits on this condition */
 pthread_cond_t	rng_buffer_ready = PTHREAD_COND_INITIALIZER;
@@ -143,9 +143,7 @@ void init_kernel_rng( void )
 		die(EXIT_USAGE);
 	}
 
-	device_poll_timeout = (arguments->poll_timeout > 0) ?
-		arguments->poll_timeout * 1000 :
-		-1;
+	random_device_timeout = arguments->feed_interval;
 
 	get_rng_proc_parameter("poolsize", &random_pool_size);
 	if (arguments->fill_watermark >= 0)
@@ -213,16 +211,25 @@ static void random_add_entropy(void *buf, size_t size)
 static void random_sleep( void )
 {
 	int ent_count;
-	struct pollfd pfd = {
-		fd:	random_fd,
-		events:	POLLOUT,
+	fd_set sfd;
+	struct timeval tv = {
+		tv_usec: 0,
+		tv_sec: random_device_timeout,
 	};
 
 	if (ioctl(random_fd, RNDGETENTCNT, &ent_count) == 0 &&
 	    ent_count < random_pool_fill_watermark)
 		return;
-	
-	poll(&pfd, 1, device_poll_timeout); 
+
+	FD_ZERO(&sfd);
+	FD_SET(random_fd, &sfd);
+	/* this is non portable, but easier than anything else
+	 * I can come up with */
+	while (!gotsigterm && 
+		select(random_fd + 1, NULL, &sfd, NULL, 
+			(random_device_timeout != 0) ? &tv : NULL) < 0) {
+		if (errno != EINTR) break;
+	}
 }
 
 void *do_rng_data_sink_loop( void *trash )

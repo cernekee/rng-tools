@@ -1,5 +1,5 @@
 rng-tools for Debian
-$Id: README.Debian,v 1.6.2.7 2004/06/05 15:24:54 hmh Exp $
+$Id: README.Debian,v 1.6.2.8 2004/10/24 13:01:10 hmh Exp $
 =====================================================
 
 NOTICE:
@@ -32,9 +32,12 @@ bytes to a device or named pipe/fifo.  The Debian package is engineered to plug
 to the hw_random device, since i810_rng development appears to have stopped.
 
 The initscript expects to read random data from /dev/hwrandom, and tries to
-feed entropy back to /dev/random.  It also knows about /dev/misc/hw_random, for
-udev.  /dev/hwrandom is a character device, major 10, minor 183 for the usual
-Linux hardware RNG drivers.
+feed entropy back to /dev/random.  It also knows about: /dev/hw_random, 
+/dev/misc/hw_random, /dev/intel_rng, /dev/misc/i810_rng, /dev/i810_rng,
+and will use the first it finds.
+
+/dev/hwrandom is a character device, major 10, minor 183 for the usual Linux
+hardware RNG drivers.
 
 If the RNG is not generating random output (as verified by FIPS 140-2, that
 is), rngd will log errors, and will NOT touch the kernel entropy pool, so no
@@ -99,9 +102,7 @@ With rngd stopped (and as root), do:
 If you get no output in a small while, hit ^C (or send a TERM signal using
 kill) to interrupt rngtest.  If rngtest output states that it hasn't received
 any bits from the TRNG, then either your TRNG is not working, it is not
-supported, or the kernel driver is broken.  rngd will _not_ work (but it won't
-output any errors, since it will block waiting for data from the TRNG, that
-will never arrive).
+supported, or the kernel driver is broken.  rngd will _not_ work.
 
 If rngtest reports that one of the FIPS tests failed, try it again with more
 blocks:
@@ -137,9 +138,10 @@ isn't even an Intel FWH in the mainboard.
 
 Almost no one but Intel itself uses this component (its main use is to host the
 system BIOS, which a cheaper Flash device without a RNG can also do just as
-easily).  Intel Desktop Boards usually have a 82802AB FWH, and the TRNG in
-those is usually functional.  Intel Server Boards usually do NOT have a
-82802AB/AC FWH.
+easily).  Intel Desktop Boards usually have a 82802AB FWH (if you are lucky and
+Intel itself has not used something else on that particular manufacturing lot
+of the board), and the TRNG in those is usually functional.  Intel Server
+Boards usually do NOT have a 82802AB/AC FWH.
 
 http://developer.intel.com/design/chipsets/rng/CRIwp.htm has interesting
 documentation on how the RNG behaves.  An important point to know is that it

@@ -40,9 +40,9 @@ STILL NOT SENT UPSTREAM:
 	* rngd.c, rngtest.c: switch from sscanf to strto* functions for
 	  better error handling.  Validate upper bounds of input
 	  parameters when needed (to avoid overflows)
-	* rngd.c, rngd_linux.c: obtain kernel entropy pool size from
-	  /proc, and implement percentage-based --fill-watermark.
-	  Switch default fill watermark from 2048 bits to 50%
+	* rngd.c, rngd_linux.c, rngd.8.in: obtain kernel entropy pool
+	  size from /proc, and implement percentage-based 
+	  --fill-watermark.  Default fill watermark is now 50%
 	* rngd.8.in: Add comment about not changing entropy pool size
 	  with rngd running
 	* rngd.c, rngd_entsource.h, rngd_entsource.c, rngd_linux.h,
@@ -50,6 +50,14 @@ STILL NOT SENT UPSTREAM:
 	  serve no useful purpose (as the modules they init access
 	  the arguments struct for other data anyway)
 	* rngd.c: call openlog with LOG_PID option
+	* rngd.c: use select() instead of poll(), so as not to lose
+	  track of the random-step timing if we get interrupted (this 
+	  change is not portable as implemented)
+	* rngd.h, rngd.c, rngd_linux.c, rngd.8.in: deprecate --timeout,
+	  rename it to --feed-interval (but keep -t short version). Rename
+	  poll_timeout to feed_interval in argument struct.
+	* rngd.h, rngd.c, rngd_entsource.c, rngd.8.in: new --rng-timeout
+	  option, to timeout the data source (currently only on startup)
 
 Tue May 09 2004  Henrique de Moraes Holschuh <hmh@debian.org>
 

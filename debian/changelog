@@ -1,3 +1,16 @@
+rng-tools (2-unofficial-mt.5-1) unstable; urgency=low
+
+  * New unofficial version:
+    * Deprecate --timeout, rename it to --feed-interval
+    * rngd_linux.c: use select() instead of poll(), so that we do not
+      lose track of --feed-interval (non-portable to non-Linux kernels)
+    * Document in rngd(8) that --fill-watermark now takes percentage values
+      and defaults to 50%
+    * Implement --rng-timeout, default 10s, so that we can detect a RNG that
+      is silent/disabled
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Sun, 24 Oct 2004 09:22:39 -0300
+
 rng-tools (2-unofficial-mt.4-1) unstable; urgency=low
 
   * New upstream version

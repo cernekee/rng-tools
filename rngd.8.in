@@ -12,11 +12,12 @@ rngd \- Check and feed random data from hardware device to kernel entropy pool
 [\fB\-o\fR \fIfile\fR | \fB\-\-random-device=\fIfile\fR]
 [\fB\-r\fR \fIfile\fR | \fB\-\-rng-device=\fIfile\fR]
 [\fB\-s\fR \fIn\fR | \fB\-\-random-step=\fIn\fR]
-[\fB\-W\fR \fIn\fR | \fB\-\-fill-watermark=\fIn\fR]
-[\fB\-t\fR \fIn\fR | \fB\-\-timeout=\fIn\fR]
+[\fB\-W\fR \fIn\fR | \fB\-\-fill-watermark=\fIn[%]\fR]
+[\fB\-t\fR \fIn\fR | \fB\-\-feed-interval=\fIn\fR]
 [\fB\-\-trng=\fIname\fR]
 [\fB\-H\fR \fIn.nnn\fR | \fB\-\-rng\-entropy=\fIn.nnn\fR]
 [\fB\-B\fR \fIn\fR | \fB\-\-rng\-buffers=\fIn\fR]
+[\fB\-T\fR \fIn\fR | \fB\-\-rng-timeout=\fIn\fR]
 [\fB\-p\fR \fIfile\fR | \fB\-\-pidfile=\fIfile\fR]
 [\fB\-?\fR] [\fB\-\-help\fR]
 [\fB\-V\fR] [\fB\-\-version\fR]
@@ -38,7 +39,7 @@ block is fed back \fIrandom-step\fR*8 bits at a time to the kernel, until the
 kernel's entropy pool is full.
 .PP
 When the entropy pool is full, the daemon will force-feed the kernel
-\fIrandom-step\fR*8 bits of data every \fItimeout\fR seconds,
+\fIrandom-step\fR*8 bits of data every \fIfeed-interval\fR seconds,
 to stir the entropy pool.  If the TRNG used by \fIrngd\fR is of very high
 quality, this will improve the entropy of the pool.
 .PP
@@ -96,18 +97,27 @@ number should be even, and between 8 and 2500.  Setting it too high will
 cause \fIrngd\fR to dominate the contents of the entropy pool.  Values 
 above 256 are unlikely to increase performance.
 .TP
-\fB\-W\fI n\fR, \fB\-\-fill\-watermark=\fIn\fR (default: 2048)
+\fB\-W\fI n\fR, \fB\-\-fill\-watermark=\fIn[%]\fR (default: 50%)
 Once we start doing it, feed entropy to \fIrandom-device\fR until at least
 \fIfill-watermark\fR bits of entropy are available in its entropy pool.
 Setting this too high will cause \fIrngd\fR to dominate the contents of the
 entropy pool.  Low values will hurt system performance during entropy 
-starves.  Do not set \fIfill-watermark\fR above the size of the
-entropy pool (usually 4096 bits).
+starves.  \fIfill-watermark\fR can be specified either as an absolute number
+of bits, or as a percentage of the total size of the entropy pool.
 .TP
-\fB\-t\fI n\fR, \fB\-\-timeout=\fIn\fR (default: 60)
-If \fItimeout\fR is not zero, \fIrngd\fR will force-feed entropy to the random
-device even when the entropy pool is full every \fItimeout\fR seconds.  Setting
-this too low may cause \fIrngd\fR to dominate the contents of the entropy pool.
+\fB\-t\fI n\fR, \fB\-\-feed-interval=\fIn\fR (default: 60)
+If \fIfeed-interval\fR is not zero, \fIrngd\fR will force-feed entropy to the
+random device even when the entropy pool is full every \fIfeed-interval\fR
+seconds.  Setting this too low may cause \fIrngd\fR to dominate the contents of
+the entropy pool.
+.TP
+\fB\-\-timeout=\fIn\fR
+Deprecated, use \fI\-\-feed-interval\fR instead.
+.TP
+\fB\-T\fI n\fR, \fB\-\-rng-timeout=\fIn\fR (default: 10)
+Time to wait for data to \fIstart\fR coming from the entropy source,
+before giving up and aborting.  Zero disables this functionality, and
+will cause \fIrngd\fR to wait forever for the entropy source.
 .TP
 \fB\-p\fI file\fR, \fB\-\-pidfile=\fIfile\fR (default: @PIDFILE@)
 File to write PID to when running in background mode
@@ -125,8 +135,9 @@ ignored or lost.  Do not to that unless you trust \fIrngd\fR's source of random
 data ultimately.
 .PP
 Also, there is only so much bandwidth available from a TRNG, and it is often
-not much.  Don't drain too much with too low a \fItimeout\fR, or \fIrngd\fR may
-not have enough data on its buffers when the kernel gets low on entropy.
+not much.  Don't drain too much with too low a \fIfeed-interval\fR, or
+\fIrngd\fR may not have enough data on its buffers when the kernel gets low on
+entropy.
 
 .SH STATISTICS
 \fIrngd\fR will dump some statistics to its output channel hourly, or when
