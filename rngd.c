@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -49,13 +50,13 @@
 #include <argp.h>
 #include <syslog.h>
 #include <pthread.h>
-#include <signal.h>
 
 #include "rngd.h"
 #include "fips.h"
 #include "exits.h"
 #include "stats.h"
 #include "rngd_threads.h"
+#include "rngd_signals.h"
 #include "rngd_entsource.h"
 #include "rngd_linux.h"
 
@@ -79,10 +80,6 @@ int am_daemon;				/* Nonzero if we went daemon */
 int exitstatus = EXIT_SUCCESS;		/* Exit status on SIGTERM */
 static FILE *daemon_lockfp = NULL;	/* Lockfile file pointer */
 static int daemon_lockfd;		/* Lockfile file descriptor */
-
-/* Signals */
-volatile int gotsigterm = 0;		/* Received a TERM signal */
-static volatile int gotsigusr1 = 0;	/* Received a USR1 signal */
 
 /* Command line arguments and processing */
 const char *argp_program_version = 
@@ -374,6 +371,55 @@ void die(int status)
 	exit(status);
 }
 
+void message(int priority, const char* fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	if (am_daemon) {
+		vsyslog(priority, fmt, ap);
+	} else {
+		vfprintf(stderr, fmt, ap);
+		fprintf(stderr, "\n");
+	}
+	va_end(ap);
+}
+
+void message_strerr(int priority, int errornumber,
+                     const char* fmt, ...)
+{
+	va_list ap;
+	char errbuf[STR_BUF_LEN];
+	char *errfmt = NULL;
+	int s;
+
+	va_start(ap, fmt);
+
+	memset(&errbuf, 0, sizeof(errbuf));
+	if (errornumber) 
+		strerror_r(errornumber, errbuf, sizeof(errbuf)-1);
+	s = strlen(fmt) + strlen(errbuf) + 3;
+	errfmt = malloc(s);
+	if (errfmt) {
+		snprintf(errfmt, s, "%s: %s", fmt, errbuf);
+		errfmt[s-1] = 0;
+	} else {
+		errfmt = (char *)fmt;
+	}
+	
+	if (am_daemon) {
+		vsyslog(priority, errfmt, ap);
+	} else {
+		vfprintf(stderr, errfmt, ap);
+		fprintf(stderr, "\n");
+	}
+
+	if (errfmt != fmt) free(errfmt);
+
+	va_end(ap);
+}
+
+
 /* 
  * Write our pid to our pidfile, and lock it
  */
@@ -385,8 +431,8 @@ static void get_lock(const char* pidfile_name)
 	if (!daemon_lockfp) {
 		if (((daemon_lockfd = open(pidfile_name, O_RDWR|O_CREAT, 0644)) == -1)
 		|| ((daemon_lockfp = fdopen(daemon_lockfd, "r+"))) == NULL) {
-			message(LOG_ERR, "can't open or create %s: %s", 
-			pidfile_name, strerror(errno));
+			message_strerr(LOG_ERR, errno, "can't open or create %s", 
+			pidfile_name);
 		   die(EXIT_USAGE);
 		}
 		fcntl(daemon_lockfd, F_SETFD, 1);
@@ -403,9 +449,8 @@ static void get_lock(const char* pidfile_name)
 					"can't lock %s, running daemon's pid may be %d",
 					pidfile_name, otherpid);
 			} else {
-				message(LOG_ERR,
-					"can't lock %s: %s",
-					pidfile_name, strerror(errno));
+				message_strerr(LOG_ERR, errno,
+					"can't lock %s", pidfile_name);
 			}
 			die(EXIT_USAGE);
 		}
@@ -417,51 +462,6 @@ static void get_lock(const char* pidfile_name)
 	ftruncate(fileno(daemon_lockfp), ftell(daemon_lockfp));
 }
 
-/*
- * Signal handling
- */
-static void sigterm_handler(int sig)
-{
-	gotsigterm = 128 | sig;
-}
-
-static void sigusr1_handler(int sig)
-{
-	gotsigusr1 = 1;
-}
-
-static void init_sighandlers(void)
-{
-	struct sigaction action;
-
-	sigemptyset(&action.sa_mask);
-	action.sa_flags = 0;
-	action.sa_handler = sigterm_handler;
-
-	/* Handle SIGTERM and SIGINT the same way */
-	if (sigaction(SIGTERM, &action, NULL) < 0) {
-		message(LOG_ERR,
-			"unable to install signal handler for SIGTERM: %s",
-			strerror(errno));
-		die(EXIT_OSERR);
-	}
-	if (sigaction(SIGINT, &action, NULL) < 0) {
-	        message(LOG_ERR,
-			"unable to install signal handler for SIGINT: %s",
-			strerror(errno));
-	        die(EXIT_OSERR);
-	}
-
-	/* Handle SIGUSR1 in a more friendly way */
-	action.sa_flags = SA_RESTART;
-	action.sa_handler = sigusr1_handler;
-	if (sigaction(SIGUSR1, &action, NULL) < 0) {
-	        message(LOG_ERR,
-			"unable to install signal handler for SIGUSR1: %s",
-			strerror(errno));
-	        die(EXIT_OSERR);
-	}
-}
 
 /*
  * Statistics, n is the number of rng buffers
@@ -545,10 +545,13 @@ int main(int argc, char **argv)
 	/* Init statistics */
 	init_rng_stats(arguments->rng_buffers);
 
-	/* Init entropy source, and open TRNG device */
+	/* Init signal handling early */
+	init_sighandlers();
+
+	/* Init entropy source */
 	init_entropy_source();
 
-	/* Init entropy sink and open random device */
+	/* Init entropy sink */
 	init_kernel_rng();
 
 	if (arguments->daemon) {
@@ -557,8 +560,7 @@ int main(int argc, char **argv)
 		get_lock(arguments->pidfile_name);
 
 		if (daemon(0, 0) < 0) {
-			message(LOG_ERR, "can't daemonize: %s",
-					strerror(errno));
+			message_strerr(LOG_ERR, errno, "can't daemonize");
 			return EXIT_OSERR;
 		}
 

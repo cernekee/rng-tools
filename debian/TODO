@@ -1,4 +1,24 @@
-$Id: TODO,v 1.6.2.25 2004/10/03 20:21:37 hmh Exp $
+$Id: TODO,v 1.6.2.26 2004/10/27 14:11:41 hmh Exp $
+
+
+** Modular arch design
+
+  goals:  input and output modules
+  input:
+    "pipe" mode: what we have now
+    "via"  mode: userspace VIA RNG support 
+             (Martin Peck <coderman@gmail.com>)
+  output:
+    "linux random" mode: what we have now
+  ? "pipe" mode: sort of what rngtest does 
+             (useful in rngd?)
+
+* new rng-via usermode code that's a via
+  entropy source, with all knobs.
+
+Command line:
+  rngd <input type> [input type options]
+
 
 Nextc:::
  - detect/store overflow on stat counters

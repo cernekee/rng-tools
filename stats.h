@@ -23,6 +23,7 @@
 
 #include <unistd.h>
 #include <stdint.h>
+#include "util.h"
 
 /* Min-Max stat */
 struct rng_stat {
@@ -34,10 +35,6 @@ struct rng_stat {
 
 /* Sets a prefix for all stat dumps. Maximum length is 19 chars */
 extern void set_stat_prefix(const char* prefix);
-
-/* Computes elapsed time in microseconds */
-extern uint64_t elapsed_time(struct timeval *start,
-                              struct timeval *stop);
 
 /* Updates min-max stat */
 extern void update_stat(struct rng_stat *stat, uint64_t value);

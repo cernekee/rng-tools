@@ -31,7 +31,6 @@
 #include <errno.h>
 #include <string.h>
 #include <pthread.h>
-#include <signal.h>
 #include <sys/mman.h>
 
 #include "rngd.h"
@@ -61,16 +60,6 @@ int getbuffifo_count(struct buf_fifo *fifo)
 	return count;
 }
 
-/*
- * Thread signal handling
- */
-void thread_init_sighandlers(void)
-{
-	sigset_t	sigs;
-	
-	sigfillset(&sigs);
-	pthread_sigmask(SIG_BLOCK, &sigs, NULL);
-}
 
 /*
  *  Init the RNG buffer structures
@@ -95,8 +84,7 @@ void init_rng_buffers(int n)
 			die(EXIT_OSERR);
 		}
 		if (mlock(rng_buf[i], FIPS_RNG_BUFFER_SIZE)) {
-			message(LOG_ERR, "cannot lock buffers: %s",
-					strerror(errno));
+			message_strerr(LOG_ERR, errno, "cannot lock buffers");
                         die(EXIT_OSERR);
 		}
 	}

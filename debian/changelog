@@ -1,3 +1,16 @@
+rng-tools (2-unofficial-mt.6-1) unstable; urgency=low
+
+  * New unofficial version:
+    * select() and poll() don't always work with /dev/hwrandom
+      Thus, even non-blocking IO is a no-go.  Add SIGALRM functionality
+      that is pthread-aware to rngd, and use that to implement --rng-timeout.
+    * rngd_linux.c: implement --feed-interval in a portable way
+    * better thread-safety when logging messages
+  * Better watch file using prdownloads.sf.net as primary source of version
+    information
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Sun, 31 Oct 2004 12:33:02 -0300
+
 rng-tools (2-unofficial-mt.5-1) unstable; urgency=low
 
   * New unofficial version:

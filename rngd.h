@@ -27,9 +27,13 @@
 #include "rng-tools-config.h"
 
 #include <unistd.h>
+#include <sys/types.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <syslog.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "fips.h"
 #include "stats.h"
@@ -90,24 +94,22 @@ extern pid_t masterprocess;		/* PID of the master process */
 extern int am_daemon;			/* Nonzero if we went daemon */
 extern int exitstatus;			/* Exit status on SIGTERM */
 
-/* Signals */
-extern volatile int gotsigterm;		/* Received a TERM signal */
-
-
 /*
- * Routines and macros
+ * Log messages to syslog or stdio (thread-safe)
  */
-#define message(priority,fmt,args...) do { \
-	if (am_daemon) { \
-		syslog((priority), fmt, ##args); \
-	} else { \
-		fprintf(stderr, fmt, ##args); \
-		fprintf(stderr, "\n"); \
-	} \
-} while (0)
+extern void message(int priority, const char* fmt, ...)
+     __attribute__ ((__format__(__printf__, 2, 3)));
 
-/* Exit rngd from outside a thread context */
-extern void die(int status);
+/* appends ": <strerr_r(errornumber)>" */
+extern void message_strerr(int priority, int errornumber,
+		const char* fmt, ...)
+     __attribute__ ((__format__(__printf__, 3, 4)));
+
+
+/* 
+ * Exit rngd the hard way 
+ * */
+extern void die(int status)
+	__attribute__ ((noreturn));
 
 #endif /* RNGD__H */
-

@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/select.h>
+#include <sys/poll.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
@@ -47,9 +47,11 @@
 #include "stats.h"
 #include "exits.h"
 #include "rngd_threads.h"
+#include "rngd_signals.h"
 #include "rngd_entsource.h"
 
 #define MAX_THROTTLE_LEVEL 6
+#define NONBLOCK_READ_RETRIES 10	/* must be > 4 */
 
 /* Logic and contexts */
 static volatile int throttling = 0;	/* Throttling level, 0 = normal */
@@ -69,17 +71,24 @@ pthread_cond_t  rng_buffer_raw = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t rng_buffer_raw_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
-/* Read data from the entropy source */
-static int xread(void *buf, size_t size)
+/* Read data from the entropy source 
+ *
+ * Works for both blocking and non-blocking mode,
+ * but it will spin using CPU in non-blocking mode...
+ *
+ * We cannot trust poll/select fully when talking to
+ * /dev/hwrandom, which is a real pity.
+ */
+static int xread(void *buf, size_t size, unsigned int abortonsigalrm)
 {
 	size_t off = 0;
 	ssize_t r;
-	char errbuf[STR_BUF_LEN];
 
 	while (size > 0) {
 		do {
 			r = read(rng_fd, (unsigned char *)buf + off, size);
-			if (gotsigterm) return -1;
+			if (gotsigterm || (abortonsigalrm && gotsigalrm))
+				return -1;
 		} while ((r == -1) && ((errno == EINTR) || (errno == EAGAIN)));
 		if (r < 0) break;
 		if (r == 0) {
@@ -93,73 +102,52 @@ static int xread(void *buf, size_t size)
 		pthread_mutex_unlock(&rng_stats.group1_mutex);
 	}
 
-	if (size) {
-		strerror_r(errno, errbuf, sizeof(errbuf));
-		errbuf[sizeof(errbuf)-1] = 0;
-
-		message(LOG_ERR, "error reading from entropy source: %s",
-			errbuf);
+	if (size != 0) {
+		message_strerr(LOG_ERR, errno,
+				"error reading from entropy source:");
 		exitstatus = EXIT_IOERR;
 		return -1;
 	}
 	return 0;
 }
 
-/* Initialize entropy source */
-static unsigned int discard_initial_data(void)
-{
-	/* Trash 32 bits of what is probably stale (non-random)
-	 * initial state from the RNG.  For Intel's, 8 bits would
-	 * be enough, but since AMD's generates 32 bits at a time...
-	 * 
-	 * The kernel drivers should be doing this at device powerup,
-	 * but at least up to 2.4.24, it doesn't. 
-	 *
-	 * We also take the opportunity to detect a disabled/non-working
-	 * data source by using a timeout 
-	 */
-	unsigned char tempbuf[4];
-	fd_set sfd;
-	struct timeval tv = {
-		tv_usec: 0,
-		tv_sec: rng_source_timeout,
-	};
-
-	/* Detect timeout just on the first read() in a lazy way */
-	if (rng_source_timeout > 0) {
-		FD_ZERO(&sfd);
-		FD_SET(rng_fd, &sfd);
-		if (select(rng_fd + 1, &sfd, NULL, NULL, &tv) == 0) {
-			message(LOG_ERR, "entropy source timed out");
-			die(EXIT_FAIL);
-		}
-	}
-
-	if (xread(tempbuf, sizeof tempbuf)) die(EXIT_FAIL);
-
-	/* Return 32 bits of bootstrap data */
-	if (xread(tempbuf, sizeof tempbuf)) die(EXIT_FAIL);
-
-	return tempbuf[0] | (tempbuf[1] << 8) | 
-		(tempbuf[2] << 16) | (tempbuf[3] << 24);
-}
-
 /*
  * Open entropy source, and initialize it
+ *
+ * We have to trash 32 bits of what is probably stale 
+ * (non-random) initial state from the RNG.  For Intel's, 8 
+ * bits would be enough, but since AMD's generates 32 bits 
+ * at a time...
+ * 
+ * The kernel drivers should be doing this at device powerup,
+ * but at least up to 2.4.28/2.6.9, it doesn't.  This is a 
+ * bug, but not really serious unless something is using the
+ * TRNG to seed the PRNGs, in which case it could be deadly.
+ *
+ * We use the opportunity to detect a stuck entropy source.
  */
 void init_entropy_source( void )
 {
-	rng_fd = open(arguments->rng_name, O_RDONLY);
-	if (rng_fd == -1) {
-		message(LOG_ERR, "can't open %s: %s",
-			arguments->rng_name, strerror(errno));
-		die(EXIT_FAIL);
-	}
+	unsigned char tempbuf[4];
 
 	rng_source_timeout = arguments->rng_timeout;
 
-	/* Bootstrap FIPS tests */
-	fips_init(&fipsctx, discard_initial_data());
+	rng_fd = open(arguments->rng_name, O_RDONLY);
+	if (rng_fd == -1) {
+		message_strerr(LOG_ERR, errno, "can't open %s",
+				arguments->rng_name);
+		die(EXIT_FAIL);
+	}
+
+	if (enable_sigalrm(rng_source_timeout)) die(EXIT_FAIL);
+	/* Discard the first 32 bits */
+	if (xread(tempbuf, sizeof tempbuf, 1)) die(EXIT_FAIL);
+	/* Get the next 32 bits to bootstrap FIPS tests */
+	if (xread(tempbuf, sizeof tempbuf, 1)) die(EXIT_FAIL);
+	disable_sigalrm();
+
+	fips_init(&fipsctx, tempbuf[0] | (tempbuf[1] << 8) |
+		(tempbuf[2] << 16) | (tempbuf[3] << 24));
 }
 
 
@@ -179,7 +167,7 @@ static void rng_data_source_work(int i, struct timeval *start,
 		struct timeval *stop)
 {
 	gettimeofday (start, 0);
-	if (xread(rng_buf[i], FIPS_RNG_BUFFER_SIZE) == -1) {
+	if (xread(rng_buf[i], FIPS_RNG_BUFFER_SIZE, 0) == -1) {
 		/* any errors are likely to be permanent. kill rngd */
 		kill(masterprocess, SIGTERM);
 		pthread_exit(NULL);
@@ -201,8 +189,6 @@ void *do_rng_data_source_loop( void *trash )
 {
 	int i;
 	struct timeval start, stop;
-
-	thread_init_sighandlers();
 
 	for (;;) {
 		if (gotsigterm) pthread_exit(NULL);
@@ -248,8 +234,6 @@ void *do_rng_fips_test_loop( void *trash )
 	struct timeval start, stop;
 	int  bad_run;
 	int  warnuser;
-
-	thread_init_sighandlers();
 
 	/* Startup: wait until we get some data to work on */
 	while (ISBUFFIFO_EMPTY(full)) {

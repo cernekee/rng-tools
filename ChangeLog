@@ -20,8 +20,6 @@ STILL NOT SENT UPSTREAM:
 	* Configure /dev/random, /dev/hwrandom and pidfile
 	  location using autoconf, to avoid hardcoded defaults;
 	* Kill warnings on stats.c and rng-test.c on ia64
-	* strerror() is not threadsafe, so don't use it inside
-	  threads.  Use strerror_r instead.
 	* Nice FAQish document (README.Debian)
 	* pidfile support for background mode
 
@@ -50,14 +48,25 @@ STILL NOT SENT UPSTREAM:
 	  serve no useful purpose (as the modules they init access
 	  the arguments struct for other data anyway)
 	* rngd.c: call openlog with LOG_PID option
-	* rngd.c: use select() instead of poll(), so as not to lose
-	  track of the random-step timing if we get interrupted (this 
-	  change is not portable as implemented)
+	* rngd_linux.c: use gettimeofday and handle EINTR on poll() so
+	  as not to lose track of the random-step timing if we get
+	  interrupted
 	* rngd.h, rngd.c, rngd_linux.c, rngd.8.in: deprecate --timeout,
 	  rename it to --feed-interval (but keep -t short version). Rename
-	  poll_timeout to feed_interval in argument struct.
+	  poll_timeout to feed_interval in argument struct
+	* Makefile.am, rngd_signals.c, rngd_signals.h: add rngd_signals.c/h
+	* rngd.h, rngd.c, rngd_linux.c, rngd_entsource.c, rngd_threads.c,
+	  rng_threads.h: move signal handling code to rngd_signals.c/h
 	* rngd.h, rngd.c, rngd_entsource.c, rngd.8.in: new --rng-timeout
 	  option, to timeout the data source (currently only on startup)
+	  using the SIGALRM machinery
+	* Makefile.am, util.h, util.c: add util.c/h
+	* stats.h, stats.c: move elapsed_time function to util.c/.h
+	* rngd_linux.c, rngtest.c: use util.h
+	* rngd.h, rngd.c: use function for message(); new message_strerr()
+	  that is thread-safe
+	* rngd.c, rngd_linux.c, rngd_entsource.c, rngd_threads.c, 
+	  rngd_signal.c: use message_strerr()
 
 Tue May 09 2004  Henrique de Moraes Holschuh <hmh@debian.org>
 
