@@ -1,18 +1,23 @@
 rng-tools for Debian
-$Id: README.Debian,v 1.6 2004/03/10 06:05:48 hmh Exp $
+$Id: README.Debian,v 1.9 2004/04/06 14:27:47 hmh Exp $
 =====================================================
 
-This program runs conditioning tests (from FIPS 140-1) on a source of random
-data, and if that data passes the FIPS test, feeds it back as trusted entropy
-to the in-kernel random pool.  Thus, it increases the amount of true random
-data the kernel has available.
+This program runs conditioning tests (from FIPS 140-2, edition of 2002-10-10)
+on a source of random data, and if that data passes the FIPS test, feeds it
+back as trusted entropy to the in-kernel entropy pool.  Thus, it increases the
+amount of true random data the kernel has available.
 
 If the kernel runs out of entropy, reads /dev/random will block, and all
 network activity that needs random numbers (such as TCP/IP) will halt until
 the kernel manages to get a bit more of entropy.
 
+See the rngd(8) manpage for more information.
+
 FIPS 140-1 is available at 
-http://csrc.nist.gov/publications/fips/fips140-1/fips1401.htm
+http://csrc.nist.gov/cryptval/140-1.htm
+
+FIPS 140-2 is available at
+http://csrc.nist.gov/cryptval/140-2.htm
 for the curious.
 
 It was designed to be the user-space companion to the i810_rng and hw_random
@@ -20,9 +25,9 @@ drivers of the linux kernel, but it will work with anything that outputs random
 bytes to a device or named pipe.
 
 The initscript expects to read random data from /dev/hwrandom, and tries to
-feed entropy back to /dev/random.  DevFS users, you better create these links.
-/dev/hwrandom is a character device, major 10, minor 183 for the usual Linux
-hardware RNG drivers.
+feed entropy back to /dev/random.  It also knows about /dev/misc/hw_random, for
+udev.  /dev/hwrandom is a character device, major 10, minor 183 for the usual
+Linux hardware RNG drivers.
 
 If the RNG is not generating random output (as verified by FIPS 140-1, that
 is), rngd will log errors, and will NOT touch the kernel entropy pool, so no
@@ -32,25 +37,25 @@ lasting harm will be done (other than wasting CPU time).
 FAQ
 ---
 
-* Q: "I don't have a /dev/hwrandom, and I am NOT using devfs.  How do I get
-     one?"
+* Q: "I don't have a /dev/hwrandom, and I am NOT using udev or devfs.  
+     How do I get one?"
   A: mknod /dev/hwrandom c 10 183
 
-* Q: "I don't have a /dev/hwrandom, and I AM using devfs.  How do I get
-     one?"
-  A: Configure devfsd to add a /dev/hwrandom link to the device file, 
-     or change the DEVICE= line in the initscript to the correct device 
-     file.
+* Q: "I don't have a /dev/hwrandom, and I AM using devfs or udev.  How do I 
+     get one?"
+  A: You should have a /dev/misc/hw_random device, IF the kernel driver has
+     loaded properly.  The initscript should notice this and use this alternate
+     location.
 
 * Q: "can't open RNG file /dev/hwrandom: No such device. 
       What does that mean?"
   A: The hw_random device is missing from the kernel (or disabled, maybe
-     because it couldn't detect a RNG), the hw_random module failed to 
+     because it couldn't detect a TRNG), the hw_random module failed to 
      install, or /dev/hwrandom has the wrong major/minor numbers. 
 
-* Q: "I have an Intel RNG (my chipset is a i8xx, after all), but 
+* Q: "I have an Intel TRNG (my chipset is a i8xx, after all), but 
      rngd logs a lot of errors to syslog.  What is happening?"
-  A: Sorry, but you DON'T have a working RNG.  Refer to the "testing rngd"
+  A: Sorry, but you DON'T have a working TRNG.  Refer to the "testing rngd"
      section for more details.
 
 * Q: "I see no errors anywhere, but rngd doesn't appear to be working.  Why?"
@@ -102,20 +107,20 @@ rare.
 The Intel Hardware RNG
 ----------------------
 
-The Intel hardware RNG is provided by the Intel FWH (82802AB or 82802AC)
+The Intel hardware TRNG is provided by the Intel FWH (82802AB or 82802AC)
 _optional_ component of the 8xx chipsets.  This chip hosts the firmware (BIOS)
-and the RNG, and is directly connected to the LPC bus in the South Bridge.
+and the TRNG, and is directly connected to the LPC bus in the South Bridge.
 
 It shows up as memory mapped by the South Bridge, and its presence is difficult
-to detect.  Regardless, the kernel driver has very weak code to detect the FWH,
-and is easily misled into believing there is an RNG active, when in fact there
+to detect.  Regardless, the kernel driver has difficulties detecting the FWH,
+and is easily misled into believing there is an TRNG active, when in fact there
 isn't even an Intel FWH in the mainboard.
 
 Almost no one but Intel itself uses this component (its main use is to host the
 system BIOS, which a cheaper Flash device without a RNG can also do just as
-easily).  Intel Desktop Boards usually have a 82802AB FWH, and the RNG in those
-is usually functional.  Intel Server Boards usually do NOT have a 82802AB/AC 
-FWH.
+easily).  Intel Desktop Boards usually have a 82802AB FWH, and the TRNG in
+those is usually functional.  Intel Server Boards usually do NOT have a
+82802AB/AC FWH.
 
 http://developer.intel.com/design/chipsets/rng/CRIwp.htm has interesting
 documentation on how the RNG behaves.  An important point to know is that it
@@ -127,9 +132,23 @@ should be on the order of 75kbit/s).  The kernel driver will eat up a LOT of
 "system time", I hope this can be corrected in future versions of the driver.
 
 /dev/random output in the test system archived an average of 120kbit/s with
-rngd active.  This is too much, so I suspect something strange is going on
-with the kernel's idea of just how much randomness rngd is feeding it.
+rngd active, probably due to the entropy accounting bugs in most 2.4 kernels.
 
 The suggested rngd -H parameter for the Intel TRNG is 0.998.
+
+
+The VIA Hardware RNG
+--------------------
+
+VIA has outdone everyone else with their TRNG.  It is implemented by the
+"Padlock" engine in their "Nehemiah" CPU core, and it is *extremely fast*,
+unlike Intel's.
+
+An excellent site to keep an eye for enhanced support for VIA's
+TRNG is: http://peertech.org/hardware/viarng/
+
+The suggested -H paremeter for the Padlock TRNG is 0.75 if the whitener is
+disabled, or 0.98 if the withener is enabled.  You're strongly advised to run
+the TRNG with the whitener enabled.
 
  -- Henrique de Moraes Holschuh <hmh@debian.org>

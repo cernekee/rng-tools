@@ -1,3 +1,15 @@
+rng-tools (1.1-1) unstable; urgency=low
+
+  * New upstream source:
+    + New rngtest by yours thruly
+    + Improved FIPS tests
+  * Minor update to README.Debian;
+  * Separate recommended options by TRNG type in /etc/default/rng-tools;
+  * Fix initscript to properly wait for rngd to exit on stop/restart;
+  * Update copyright file.
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue,  6 Apr 2004 11:13:34 -0300
+
 rng-tools (1.0-3) unstable; urgency=low
 
   * Remove all hand-holding about /dev/hwrandom from initscript.

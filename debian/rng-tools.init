@@ -4,7 +4,7 @@
 #		Copr. 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
 #		Copr. 2002 by Viral Shah <viral@debian.org>
 #
-# $Id: rng-tools.init,v 1.6 2004/03/09 20:30:13 hmh Exp $
+# $Id: rng-tools.init,v 1.7 2004/04/06 14:27:47 hmh Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/rngd
@@ -54,33 +54,20 @@ case "$1" in
   stop)
 	echo -n "Stopping $DESC: "
 	if start-stop-daemon --stop --quiet --pidfile ${PIDFILE} \
-		--startas ${DAEMON} >/dev/null 2>&1 ; then
+		--startas ${DAEMON} --retry 10 >/dev/null 2>&1 ; then
 			echo "${NAME}."
 	else
-		echo "(failed)."
+		if start-stop-daemon --test ${START} >/dev/null 2>&1; then
+			echo "(not running)."
+			exit 0
+		else
+			echo "(failed)."
+			exit 1
+		fi
 	fi
 	;;
   restart|force-reload)
-	$0 stop && {
-	  echo -n "Waiting for complete shutdown..."
-	  i=5
-	  while [ $i -gt 0 ] ; do
-	  	if start-stop-daemon --start --test \
-		   --pidfile ${PIDFILE} \
-		   --exec ${DAEMON} >/dev/null 2>&1 ; then
-		       break
-		fi
-		sleep 2s
-		i=$(($i - 1))
-		echo -n "."
-	  done
-	  [ $i -eq 0 ] && {
-		echo
-		echo "fatal: incomplete shutdown detected, aborting."
-		exit 1
-	  }
-	  echo
-	}
+	$0 stop
 	exec $0 start	    
 	;;
   *)

@@ -1,4 +1,4 @@
-$Id: copyright,v 1.2 2004/03/09 20:20:35 hmh Exp $
+$Id: copyright,v 1.3 2004/04/06 14:27:47 hmh Exp $
 
 This package was assembled by Henrique de Moraes Holschuh <hmh@debian.org>,
 based on previous work by Viral Shah <viral@debian.org>.
@@ -13,15 +13,18 @@ The Debian packaging of rng-tools is:
 
 Changes:
   The Debian version of rngd is extensively patched with added 
-  functionality, courtesy of Henrique de Moraes Holschuh <hmh@debian.org>  
+  functionality, courtesy of Henrique de Moraes Holschuh <hmh@debian.org>.
+  All changes are being merged upstream.
 
 Upstream Authors: 
-  Philipp Rumpf <prumpf@mandrakesoft.com>, 
-  Jeff Garzik <jgarzik@mandrakesoft.com>
+  Philipp Rumpf>, 
+  Jeff Garzik <jgarzik@pobox.com>
+  Henrique de Moraes Holschuh <hmh@debian.org>
 
 Copyright:
-   Copyright (C) 2001 Philipp Rumpf <prumpf@mandrakesoft.com> (rndg)
-   Copyright (C) 2001 Jeff Garzik <jgarzik@mandrakesoft.com>  (manpage)
+   Copyright (C) 2001 Philipp Rumpf
+   Copyright (C) 2001 Jeff Garzik <jgarzik@pobox.com>
+   Copyright (C) 2004 Henrique de Moraes Holschuh <hmh@debian.org>
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the

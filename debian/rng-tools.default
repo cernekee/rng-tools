@@ -1,5 +1,5 @@
 # Configuration for the rng-tools initscript
-# $Id: rng-tools.default,v 1.1 2004/03/09 20:30:13 hmh Exp $
+# $Id: rng-tools.default,v 1.2 2004/03/22 16:13:27 hmh Exp $
 
 # This is a POSIX shell fragment
 
@@ -9,4 +9,9 @@
 
 # Additional options to send to rngd. See the rngd(8) manpage for
 # more information.  Do not specify -r/--rng-device here.
+
+# Options recommended for Intel's TRNG
 #RNGDOPTIONS="-H 0.998"
+
+# Options recommended for VIA's high-speed TRNG
+#RNGDOPTIONS="-H 0.75"

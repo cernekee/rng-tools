@@ -1,3 +1,76 @@
+Tue Apr  6 2004  Jeff Garzik  <jgarzik@pobox.com>
+
+	* Release version 1.1.
+
+Fri Apr  5 2004  Henrique de Moraes Holschuh <hmh@debian.org>
+
+	Add rngtest application:
+	* Makefile.am: build rngtest.
+	* configure.ac: process rngtest.1.in.
+	* stats.h/stats.c: add.  Statistics based on ideas
+	  from mtrngd.cpp by Martin Peck <coderman@peertech.org>
+	* exits.h: add.
+	* rngtest.c: add.
+	* contrib/Makefile.am: remove rngtest.c.
+	* contrib/rngtest.c: remove.
+	* AUTHORS: add myself
+
+Fri Apr  5 2004  Henrique de Moraes Holschuh <hmh@debian.org>
+
+	* rngd.c: use C99 initializers syntax, and stop
+	  compilation if build env. is incomplete
+	* fips.c, fips.h: s/FIPS_TESTS/N_FIPS_TESTS/ and
+	  remove uneeded includes
+	* fips.c: reword error message when build env. is 
+	  incomplete, and also reorder some includes
+	* AUTHORS, configure.ac, fips.c, fips.h, rngd.c,
+	  rngd.8.in: Update Jeff Garzik's email address, remove
+	  outdated email address for Philipp Rumpf, on request
+	  by Jeff Garzik.
+	* configure.ac, rngd.c: Change bugreport address to
+	  Jeff Garzik's.
+
+Fri Apr  4 2004  Henrique de Moraes Holschuh <hmh@debian.org>
+	* Makefile.am: Add header and CVS Id tag; Do some cosmetic
+	  reformating; Add rngd_SOURCES.
+	* rngd.c: move all FIPS test code to fips.h/fips.c
+	* fips.h, fips.c: add.  
+	  + Update comments with more FIPS 140-2 trivia. 
+	  + Use a context structure to hold the FIPS test data.
+	  + Implement FIPS 140-2 4.9 Continuous Run test.
+	  + Add constants with the test names and bitmask for
+	    easier statistic reporting later.
+
+Fri Apr  3 2004  Henrique de Moraes Holschuh <hmh@debian.org>
+
+	* autogen.sh: Add comments with the required versions
+	  of the tools.  Call aclocal before autoheader.  
+	  Use --copy for automake invocation.
+	  Identify as version 1.1-devel.
+	* configure.in: rename to configure.ac
+	* configure.ac: Add GPL header.  Convert to autoconf
+	  2.50 macros, enable AM_MAINTAINER_MODE and disable
+	  useless cross-platform compatiblilty glue that
+	  isn't used anywere
+	* acconfig.h: remove
+	* .cvsignore: update for new autotools
+
+Sat Jul  5 2003  Jeff Garzik  <jgarzik@pobox.com>
+
+	* contrib/rngtest.c, rngd.8.in: s/intel_rng/hwrandom/
+
+	Noticed by Olivier NICOLAS.
+
+Sat Jul  5 2003  Sami Farin  <safari@users.sourceforge.net>
+
+	"updated" to FIPS140-2 standard, it has a bit more
+	strict constraints on randomness.. about one out of
+	1000 blocks read from /dev/urandom causes a failure.
+
+	also a bugfix:
+	checks for EINTR in xread (maybe not necessary with
+	i810 driver?) 
+
 Sat Jul  5 2003  Jeff Garzik  <jgarzik@pobox.com>
 
 	Rename to rng-tools, release version 1.0.

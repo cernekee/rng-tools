@@ -1,12 +1,11 @@
-$Id: TODO,v 1.6 2004/03/09 20:20:16 hmh Exp $
+$Id: TODO,v 1.9 2004/03/22 16:14:24 hmh Exp $
 
 High:
- - MAKEDEV hw_random
- - change debian/rules to ship docs, devfs crap
  - increase FIPS bandwidth by double-buffering FIPS-approved data
 
 Low:
- - Make sure failing FIPS does not hog CPU
- - devfs stuff
+ - Make sure failing FIPS does not hog CPU (does it? not here)
  - protect the FIPS-approved entropy buffer against attacks (randomize
    feed to kernel?)
+ - merge in MT version of rngd?
+ - ship rng benchmark stuff?
