@@ -1,3 +1,18 @@
+rng-tools (1.1-unofficial-mt.1-1) unstable; urgency=medium
+
+  * New unofficial version:
+    * Initialize statistics early in rngd.c
+  * Switch to arch: any.  I figure that at least ppc, ia32, ia64 and
+    amd64/x86_64 may benefit from this package (although I do not know of a
+    TRNG for the PPC).  One could also generate the random numbers elsewhere
+    and store them in a (big) file, at which point anything that runs Linux
+    would be able to use this package with the TRNG output file
+    (closes: #252535);
+  * Minor updates to package description, and README.Debian.
+  * Urgency medium, to get a bug-free version in testing ASAP
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Sat,  5 Jun 2004 14:02:45 -0300
+
 rng-tools (1.1-unofficial-mt-3) unstable; urgency=low
 
   * Upload to unstable, since Jeff Garzik seems to be otherwise

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.6.2.21 2004/05/10 12:01:29 hmh Exp $
+$Id: TODO,v 1.6.2.22 2004/06/05 15:24:33 hmh Exp $
 
 Nextc:::
  - detect/store overflow on stat counters
@@ -6,3 +6,4 @@ Nextc:::
 
 Backburner:
  - i18n (including argp)
+ - file input with deletion of used bits

@@ -407,14 +407,14 @@ static void init_sighandlers(void)
 }
 
 /*
- * Statistics
+ * Statistics, n is the number of rng buffers
  */
-static void init_rng_stats(void)
+static void init_rng_stats(int n)
 {
 	set_stat_prefix("stats: ");
 
 	memset(&rng_stats, 0, sizeof(rng_stats));
-	rng_stats.buffer_lowmark = rng_buffers - 1; /* one is always in use */
+	rng_stats.buffer_lowmark = n - 1; /* one is always in use */
 
 	pthread_mutex_init(&rng_stats.group1_mutex, NULL);
 	pthread_mutex_init(&rng_stats.group2_mutex, NULL);
@@ -485,6 +485,9 @@ int main(int argc, char **argv)
 	/* close useless FDs we might have gotten somehow */
 	for(fd = 3; fd < 250; fd++) (void) close(fd);
 
+	/* Init statistics */
+	init_rng_stats(arguments->rng_buffers);
+
 	/* Init entropy source, and open TRNG device */
 	init_entropy_source(arguments->rng_name);
 
@@ -512,9 +515,8 @@ int main(int argc, char **argv)
 	masterprocess = getpid();
 	message(LOG_INFO, PROGNAME " " VERSION " starting up...");
 
-	/* Init data structures */
+	/* post-fork initialization */
 	init_rng_buffers(arguments->rng_buffers);
-	init_rng_stats();
 	init_sighandlers();
 
 	/* Fire up worker threads */

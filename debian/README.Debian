@@ -1,5 +1,5 @@
 rng-tools for Debian
-$Id: README.Debian,v 1.6.2.6 2004/05/09 17:22:01 hmh Exp $
+$Id: README.Debian,v 1.6.2.7 2004/06/05 15:24:54 hmh Exp $
 =====================================================
 
 NOTICE:
@@ -28,7 +28,7 @@ for the curious.
 
 It was designed to be the user-space companion to the i810_rng and hw_random
 drivers of the linux kernel, but it will work with anything that outputs random
-bytes to a device or named pipe.  The Debian package is engineered to plug
+bytes to a device or named pipe/fifo.  The Debian package is engineered to plug
 to the hw_random device, since i810_rng development appears to have stopped.
 
 The initscript expects to read random data from /dev/hwrandom, and tries to
@@ -40,6 +40,9 @@ If the RNG is not generating random output (as verified by FIPS 140-2, that
 is), rngd will log errors, and will NOT touch the kernel entropy pool, so no
 lasting harm will be done (other than wasting CPU time).  If too many errors
 happen, rngd will exit.
+
+If you want to feed rngd from a big file containing TRNG data, you must take
+steps to never use twice the same random data as input for rngd.
 
 rngtest allows one to test the hw_random device directly, and should be run
 only with rngd stopped.
@@ -71,6 +74,12 @@ FAQ
 
 * Q: "I see no errors anywhere, but rngd doesn't appear to be working.  Why?"
   A: See the "testing rngd" section for details.
+
+* Q: "How good are the FIPS tests?"
+  A: Good enough to detect a failing TRNG, but not good enough to detect a
+     TRNG that is not cryptographically strong for other reasons.
+     I suppose this is the reason for these tests being removed from the
+     newest FIPS editions.
 
 
 Testing rngd
