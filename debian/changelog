@@ -1,3 +1,11 @@
+rng-tools (2-unofficial-mt.8-4) unstable; urgency=high
+
+  * Fix bad off-by-one error on the FIFO queue allocation that has been
+    in the unofficial versions since forever.  I really need to use
+    valgrind more often.
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Fri, 11 Feb 2005 00:10:53 -0200
+
 rng-tools (2-unofficial-mt.8-3) unstable; urgency=high
 
   * The "WTF are they smoking up there?" release
