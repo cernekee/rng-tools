@@ -1,3 +1,12 @@
+rng-tools (2-unofficial-mt.8-3) unstable; urgency=high
+
+  * The "WTF are they smoking up there?" release
+  * Rework initscript to detect yet another new alias for the
+    hw_random.  Now udev rules want to call it hwrng.  I love how
+    these things keep changing for no good reason.
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Thu, 10 Feb 2005 04:25:42 -0200
+
 rng-tools (2-unofficial-mt.8-2) unstable; urgency=low
 
   * Install modprobe.d file mapping char-major-10-183, /dev/hwrandom,
