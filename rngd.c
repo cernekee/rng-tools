@@ -10,6 +10,7 @@
  * harder.
  *
  * Copyright (C) 2001 Philipp Rumpf
+ * Copyright (C) 2001-2004 Jeff Garzik
  * Copyright (C) 2004 Henrique de Moraes Holschuh <hmh@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -39,6 +40,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -83,6 +85,8 @@ static volatile int gotsigusr1 = 0;	/* Received a USR1 signal */
 /* Command line arguments and processing */
 const char *argp_program_version = 
 	PROGNAME " " VERSION "\n"
+	"Copyright (c) 2001-2004 by Jeff Garzik\n"
+	"Copyright (c) 2004 by Henriqe de Moraes Holschuh\n"
 	"Copyright (c) 2001 by Philipp Rumpf\n"
 	"This is free software; see the source for copying conditions.  There is NO "
 	"warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
@@ -108,8 +112,8 @@ static struct argp_option options[] = {
 	{ "random-step", 's', "n", 0,
 	  "Number of bytes written to random-device at a time (default: 64), 8 <= n <= " STR(FIPS_RNG_BUFFER_SIZE) ", n must be even" },
 
-	{ "fill-watermark", 'W', "n", 0,
-	  "Do not stop feeding entropy to random-device until at least n bits of entropy are available in the pool (default: 2048), 0 <= n <= 4096" },
+	{ "fill-watermark", 'W', "n[%]", 0,
+	  "Do not stop feeding entropy to random-device until at least n bits of entropy are available in the pool. n can be the absolute number of bits, or a percentage of the pool size (default: 50%), 0 <= n <= kernel random pool size, or 0% <= n <= 100%" },
 
 	{ "timeout", 't', "n", 0,
 	  "Interval written to random-device when the entropy pool is full, in seconds (default: 60)" },
@@ -134,7 +138,7 @@ static struct arguments default_arguments = {
 	.pidfile_name	= PIDFILE,
 	.poll_timeout	= 60,
 	.random_step	= 64,
-	.fill_watermark = 2048,
+	.fill_watermark = -50,
 	.daemon		= 1,
 	.rng_entropy	= 1.0,
 	.rng_buffers	= 3,
@@ -217,11 +221,13 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 		arguments->pidfile_name = arg;
 		break;
 	case 't': {
-		float f;
-		if (sscanf(arg, "%f", &f) == 0)
+		long int n;
+		char *p;
+		n = strtol(arg, &p, 10);
+		if ((p == arg) || (*p != 0) || (n < 0) || (n >= INT_MAX))
 			argp_usage(state);
 		else
-			arguments->poll_timeout = f;
+			arguments->poll_timeout = n;
 		break;
 	}
 
@@ -232,40 +238,59 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 		arguments->daemon = 1;
 		break;
 	case 's': {
-		int n;
-		if ((sscanf(arg, "%i", &n) == 0) || (n < 8) || 
-			(n > FIPS_RNG_BUFFER_SIZE) || (n & 1))
+		long int n;
+		char *p;
+		n = strtol(arg, &p, 10);
+		if ((p == arg) || (*p != 0) || (n < 8) ||
+		    (n > FIPS_RNG_BUFFER_SIZE) || (n & 1))
 			argp_usage(state);
 		else
 			arguments->random_step = n;
 		break;
 	}
 	case 'W': {
-		int n;
-		if ((sscanf(arg, "%i", &n) == 0) || (n < 0) || (n > 4096))
-			argp_usage(state);
-		else
-			arguments->fill_watermark = n;
+		long int n;
+		char *p;
+		n = strtol(arg, &p, 10);
+		if ((p != arg) && (*p == '%')) {
+			p++;
+			if ((*p != 0) || (n < 0) || (n > 100))
+				argp_usage(state);
+			else
+				arguments->fill_watermark = -n;
+		} else {
+			if ((p == arg) || (*p != 0) || (n >= 131072))
+				argp_usage(state);
+			else
+				arguments->fill_watermark = n;
+		}
 		break;
 	}
 
 	case 'H': {
 		float H;
-		if ((sscanf(arg, "%f", &H) == 0) || (H <= 0) || (H > 1))
+		char *p;
+		H = strtof(arg, &p);
+		if ((p == arg) || (*p != 0) || (H <= 0) || (H > 1))
 			argp_usage(state);
-		else
+		else {
 			arguments->rng_entropy = H;
 			seen_opt |= SEEN_OPT_RNGENTROPY;
+		}
 		break;
 	}
 
 	case 'B': {
-		int n;
-		if ((sscanf(arg, "%i", &n) == 0) || (n < 1) || (n > MAX_RNG_BUFFERS ))
+		long int n;
+		char *p;
+		n = strtol(arg, &p, 10);
+		if ((p == arg) || (*p != 0) || 
+		    (n < 1) || (n > MAX_RNG_BUFFERS ))
 			argp_usage(state);
-		else
+		else {
 			arguments->rng_buffers = n;
 			seen_opt |= SEEN_OPT_RNGBUFFERS;
+		}
 		break;
 	}
 
@@ -495,10 +520,10 @@ int main(int argc, char **argv)
 	init_rng_stats(arguments->rng_buffers);
 
 	/* Init entropy source, and open TRNG device */
-	init_entropy_source(arguments->rng_name);
+	init_entropy_source();
 
 	/* Init entropy sink and open random device */
-	init_kernel_rng(arguments->random_name);
+	init_kernel_rng();
 
 	if (arguments->daemon) {
 		/* check if another rngd is running, 
@@ -511,7 +536,7 @@ int main(int argc, char **argv)
 			return EXIT_OSERR;
 		}
 
-		openlog(PROGNAME, 0, SYSLOG_FACILITY);
+		openlog(PROGNAME, LOG_PID, SYSLOG_FACILITY);
 		am_daemon = 1;
 
 		/* update pidfile */

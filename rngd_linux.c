@@ -56,25 +56,108 @@
 /* Kernel output device */
 static int random_fd;
 
+/* Kernel RNG parameters */
+static long int random_pool_size = 4096;
+static long int random_pool_fill_watermark = 2048;
+static int device_poll_timeout;
+
 /* RNG data sink thread waits on this condition */
 pthread_cond_t	rng_buffer_ready = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t	rng_buffer_ready_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 /*
+ * RNG parameter helpers
+ */
+static int get_rng_proc_parameter(const char* param, long int *value)
+{
+	FILE *fp = NULL;
+	int error = 0;
+
+	long int curvalue;
+	char procname[512];
+
+	procname[sizeof(procname)-1] = 0;
+	snprintf(procname, sizeof(procname), "/proc/sys/kernel/random/%s",
+		 param);
+	if ( ((fp = fopen(procname, "r")) != NULL) &&
+		(fscanf(fp, "%ld", &curvalue) == 1) ) {
+		*value = curvalue;
+	} else error = 1;
+	if (fp != NULL) error |= fclose(fp);
+	
+	if (error) {
+		message(LOG_WARNING,
+			"Cannot read %s: %s",
+			procname, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
+#if 0
+static int set_rng_proc_parameter(const char* param, long int *value)
+{
+	FILE *fp = NULL;
+	int error = 0;
+	
+	long int curvalue;
+	char procname[512];
+
+	procname[sizeof(procname)-1] = 0;
+	snprintf(procname, sizeof(procname), "/proc/sys/kernel/random/%s", 
+		 param);
+	if ( ((fp = fopen(procname, "r+")) != NULL) &&
+		 (fscanf(fp, "%ld", &curvalue) == 1) ) {
+		if ( *value > curvalue ) {
+			rewind(fp);
+			fprintf(fp, "%ld\n", *value);
+			message(LOG_NOTICE, "Setting %s to %ld",
+				procname, *value);
+		} else {
+			*value = curvalue;
+		}
+	} else error = 1;
+	if (fp != NULL) error |= fclose(fp);
+	
+	if (error) {
+		message(LOG_WARNING,
+			"Cannot set %s to a minimum of %ld: %s",
+			procname, *value, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+#endif
+
+/*
  * Initialize the interface to the Linux Kernel
  * entropy pool (through /dev/random)
- *
- * randomdev is the path to the random device
  */
-void init_kernel_rng(const char* randomdev)
+void init_kernel_rng( void )
 {
-	random_fd = open(randomdev, O_RDWR);
+	random_fd = open(arguments->random_name, O_RDWR);
 	if (random_fd == -1) {
 		message(LOG_ERR, "can't open %s: %s",
-			randomdev, strerror(errno));
+			arguments->random_name, strerror(errno));
 		die(EXIT_USAGE);
 	}
+
+	device_poll_timeout = (arguments->poll_timeout > 0) ?
+		arguments->poll_timeout * 1000 :
+		-1;
+
+	get_rng_proc_parameter("poolsize", &random_pool_size);
+	if (arguments->fill_watermark >= 0)
+		random_pool_fill_watermark = arguments->fill_watermark;
+	else
+		random_pool_fill_watermark = (long int) random_pool_size * 
+			(-arguments->fill_watermark) / 100.0;
+
+	/* Avoid looping on something that will never happen,
+	 * with a off-by-one tolerance margin just in case */
+	if (random_pool_fill_watermark > random_pool_size - 1)
+		random_pool_fill_watermark = random_pool_size - 1;
 }
 
 
@@ -136,10 +219,10 @@ static void random_sleep( void )
 	};
 
 	if (ioctl(random_fd, RNDGETENTCNT, &ent_count) == 0 &&
-	    ent_count < arguments->fill_watermark)
+	    ent_count < random_pool_fill_watermark)
 		return;
 	
-	poll(&pfd, 1, 1000.0 * (arguments->poll_timeout ? : -1.0));
+	poll(&pfd, 1, device_poll_timeout); 
 }
 
 void *do_rng_data_sink_loop( void *trash )
@@ -153,7 +236,9 @@ void *do_rng_data_sink_loop( void *trash )
 	thread_init_sighandlers();
 
 	/*  Startup: Wait until we get some data to work on */
-	if (ISBUFFIFO_EMPTY(accepted)) {
+	while (ISBUFFIFO_EMPTY(accepted)) {
+		if (gotsigterm) pthread_exit(NULL);
+
 		pthread_mutex_lock(&rng_buffer_ready_mutex);
 		pthread_cond_wait(&rng_buffer_ready, &rng_buffer_ready_mutex);
 		pthread_mutex_unlock(&rng_buffer_ready_mutex);

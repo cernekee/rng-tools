@@ -16,20 +16,48 @@ STILL NOT SENT UPSTREAM:
 	  per bit of data;
 	* Add --trng with some presets for various TRNGs
 	  (currently VIA and Intel TRNGs);
-	* Extensively revamped and updated manpage;
+	* Extensively revamped and updated manpages;
 	* Configure /dev/random, /dev/hwrandom and pidfile
 	  location using autoconf, to avoid hardcoded defaults;
 	* Kill warnings on stats.c and rng-test.c on ia64
-	* Better pidfile locking, always use flock()
 	* strerror() is not threadsafe, so don't use it inside
 	  threads.  Use strerror_r instead.
+	* Nice FAQish document (README.Debian)
+	* pidfile support for background mode
 
-SENT AND WAITING MERGE:
-	* pidfile support for background mode;
-	* Let the user set the fill watermark explicitly,
-	  instead of hardcoding it at 50%.  This also means we
-	  can drop the unsafe usage of RNDGETPOOL, and that
-	  rngd should work right with 2.6 kernels, now.
+        Cleanups suggested by Steve G <linux_4ever@yahoo.com>:
+	* fips.c: declare FIPS data array as const
+	* rngd_linux.c: small random_sleep cleanup
+	* stats.h, stats.c, rngd_entsource.c: avoid signed/unsigned 
+	  conversions
+	* rngd_entsource.c, rngtest.c: typecast void pointers 
+	  for pointer arithmetric
+
+	Other:
+	* rngd.h, rngd.c, rngd_linux.c: precalculate poll timeout
+	  on init_kernel_rng.  Now arguments->poll_timeout is an int
+	  instead of a double
+	* rngd.c, rngtest.c: switch from sscanf to strto* functions for
+	  better error handling.  Validate upper bounds of input
+	  parameters when needed (to avoid overflows)
+	* rngd.c, rngd_linux.c: obtain kernel entropy pool size from
+	  /proc, and implement percentage-based --fill-watermark.
+	  Switch default fill watermark from 2048 bits to 50%
+	* rngd.8.in: Add comment about not changing entropy pool size
+	  with rngd running
+	* rngd.c, rngd_entsource.h, rngd_entsource.c, rngd_linux.h,
+	  rngd_linux.c: remove arguments to init_* functions, since they
+	  serve no useful purpose (as the modules they init access
+	  the arguments struct for other data anyway)
+	* rngd.c: call openlog with LOG_PID option
+
+Tue May 09 2004  Henrique de Moraes Holschuh <hmh@debian.org>
+
+	* rngd.h, rngd.c, rngd_linux.c, rngd.8.in: Let the user
+	  set the fill watermark explicitly, using the new -W
+	  command line option.  This gets rid of RNDGETPOOL
+	  usage, and of a hardcoded (yuck) setting of 50%.
+	  This change will make rngd work right with 2.6 kernels.
 
 Thu Apr 15 2004  Jeff Garzik  <jgarzik@pobox.com>
 

@@ -88,10 +88,10 @@ static struct argp_option options[] = {
 };
 
 struct arguments {
-	int blockstats;
+	unsigned long int blockstats;
 	uint64_t timedstats;		/* microseconds */
 	int pipemode;
-	int blockcount;
+	unsigned long int blockcount;
 };
 
 static struct arguments default_arguments = {
@@ -107,24 +107,30 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 	
 	switch(key) {
 	case 'c': {
-		int n;
-		if ((sscanf(arg, "%i", &n) == 0) || (n < 0))
+		long int n;
+		char *p;
+		n = strtol(arg, &p, 10);
+		if ((p == arg) || (*p != 0) || (n < 0))
 			argp_usage(state);
 		else
 			arguments->blockcount = n;
 		break;
 	}
 	case 'b': {
-		int n;
-		if ((sscanf(arg, "%i", &n) == 0) || (n < 0))
+		long int n;
+		char *p;
+		n = strtol(arg, &p, 10);
+		if ((p == arg) || (*p != 0) || (n < 0))
 			argp_usage(state);
 		else
 			arguments->blockstats = n;
 		break;
 	}
 	case 't': {
-		int n;
-		if ((sscanf(arg, "%i", &n) == 0) || (n < 0))
+		long int n;
+		char *p;
+		n = strtol(arg, &p, 10);
+		if ((p == arg) || (*p != 0) || (n < 0))
 			argp_usage(state);
 		else
 			arguments->timedstats = 1000000ULL * n;
@@ -218,7 +224,7 @@ static int xread(void *buf, size_t size)
 	ssize_t r;
 
 	while (size) {
-		r = read(0, buf + off, size);
+		r = read(0, (unsigned char *)buf + off, size);
 		if (r < 0) {
 			if (gotsigterm) return -1;
 			if ((errno == EAGAIN) || (errno == EINTR)) continue;
@@ -226,7 +232,7 @@ static int xread(void *buf, size_t size)
 		} else if (!r) {
 			if (!arguments->pipemode)
 				fprintf(stderr, 
-					"%sentropy source drained\n", 
+					"%sentropy source exhausted!\n", 
 					logprefix);
 			return -1;
 		}
@@ -251,7 +257,7 @@ static int xwrite(void *buf, size_t size)
 	ssize_t r;
 
 	while (size) {
-		r = write(1, buf + off, size);
+		r = write(1, (unsigned char *)buf + off, size);
 		if (r < 0) {
 			if (gotsigterm) return -1;
 			if ((errno == EAGAIN) || (errno == EINTR)) continue;
@@ -325,7 +331,7 @@ static void dump_rng_stats(void)
 }
 
 /* Return 32 bits of bootstrap data */
-static int discard_initial_data(void)
+static unsigned int discard_initial_data(void)
 {
 	unsigned char tempbuf[4];
 
@@ -345,7 +351,7 @@ static void do_rng_fips_test_loop( void )
 	int j;
 	int fips_result;
 	struct timeval start, stop, statdump, now;
-	int statruns, runs;
+	unsigned long int statruns, runs;
 
 	runs = statruns = 0;
 	gettimeofday(&statdump, 0);

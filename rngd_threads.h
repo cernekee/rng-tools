@@ -41,7 +41,7 @@ extern rng_buffer_t *rng_buf[MAX_RNG_BUFFERS];
 extern void init_rng_buffers(int n);
 
 /*
- * FIFOs to pass blocks among the threads, avoiding spinlocks
+ * FIFOs to pass blocks among the threads
  */
 struct buf_fifo {
 	pthread_mutex_t mutex;

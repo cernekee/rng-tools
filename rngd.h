@@ -39,13 +39,15 @@
 
 /* Command line arguments and processing */
 struct arguments {
+	/* Paths to devices */
 	char *random_name;
 	char *rng_name;
 	char *pidfile_name;
-	
+
 	int random_step;
-	int fill_watermark;
-	double poll_timeout;
+	int fill_watermark;	/* n<0: percentage of poolsize, 
+				   n>=0: number of bits */
+	int poll_timeout;
 
 	int daemon;
 

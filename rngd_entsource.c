@@ -74,7 +74,7 @@ static int xread(void *buf, size_t size)
 
 	while (size > 0) {
 		do {
-			r = read(rng_fd, buf + off, size);
+			r = read(rng_fd, (unsigned char *)buf + off, size);
 			if (gotsigterm) return -1;
 		} while ((r == -1) && ((errno == EINTR) || (errno == EAGAIN)));
 		if (r < 0) break;
@@ -102,7 +102,7 @@ static int xread(void *buf, size_t size)
 }
 
 /* Initialize entropy source */
-static int discard_initial_data(void)
+static unsigned int discard_initial_data(void)
 {
 	/* Trash 32 bits of what is probably stale (non-random)
 	 * initial state from the RNG.  For Intel's, 8 bits would
@@ -123,12 +123,12 @@ static int discard_initial_data(void)
 /*
  * Open entropy source, and initialize it
  */
-void init_entropy_source(const char* sourcedev)
+void init_entropy_source( void )
 {
-	rng_fd = open(sourcedev, O_RDONLY);
+	rng_fd = open(arguments->rng_name, O_RDONLY);
 	if (rng_fd == -1) {
 		message(LOG_ERR, "can't open %s: %s",
-			sourcedev, strerror(errno));
+			arguments->rng_name, strerror(errno));
 		die(EXIT_FAIL);
 	}
 
@@ -226,7 +226,9 @@ void *do_rng_fips_test_loop( void *trash )
 	thread_init_sighandlers();
 
 	/* Startup: wait until we get some data to work on */
-	if (ISBUFFIFO_EMPTY(full)) {
+	while (ISBUFFIFO_EMPTY(full)) {
+		if (gotsigterm) pthread_exit(NULL);
+
 		pthread_mutex_lock(&rng_buffer_raw_mutex);
 		pthread_cond_wait(&rng_buffer_raw, &rng_buffer_raw_mutex);
 		pthread_mutex_unlock(&rng_buffer_raw_mutex);

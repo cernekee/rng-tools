@@ -29,10 +29,8 @@
 
 /*
  * Initialize entropy source and entropy conditioning
- *
- * sourcedev is the path to the entropy source
  */
-extern void init_entropy_source(const char* sourcedev);
+extern void init_entropy_source( void );
 
 /*
  * RNG data source thread

@@ -116,11 +116,11 @@ int fips_run_rng_test (fips_ctx_t *ctx, const void *buf)
 {
 	int i, j;
 	int rng_test = 0;
-	unsigned char *rngdatabuf;
+	const unsigned char *rngdatabuf;
 
 	if (!ctx) return -1;
 	if (!buf) return -1;
-	rngdatabuf = (unsigned char *)buf;
+	rngdatabuf = (const unsigned char *)buf;
 
 	for (i=0; i<FIPS_RNG_BUFFER_SIZE; i += 4) {
 		int new32 = rngdatabuf[i] | 

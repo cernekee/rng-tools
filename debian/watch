@@ -1,4 +1,2 @@
-# watch control file for uscan
-# Site           Directory       Pattern                 Version Script
-
-http://prdownloads.sourceforge.net /gkernel/ rng-tools-(.*)\\.tar\\.gz debian
+version=2
+ftp://ftp2.sf.net/pub/sourceforge/g/gk/gkernel/rng-tools-?_?([\w+\d+\.]+|\d+)(\.tar|\.tgz)(\.gz|\.bz2|)

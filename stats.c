@@ -50,13 +50,13 @@ void set_stat_prefix(const char* prefix)
 	strncpy(stat_prefix, prefix, sizeof(stat_prefix)-1);
 }
 
-static void scale_mult_unit(char *unit, int unitsize, 
+static void scale_mult_unit(char *unit, size_t unitsize, 
 		       const char *baseunit, 
 		       double *value_min,
 		       double *value_avg,
 		       double *value_max)
 {
-	int mult = 0;
+	unsigned int mult = 0;
 	char multchar[] = "KMGTPE";
 
 	while ((*value_min >= 1024.0) && (*value_avg >= 1024.0) && 
@@ -100,7 +100,7 @@ void update_stat(struct rng_stat *stat, uint64_t value)
 	}
 }
 
-char *dump_stat_counter(char *buf, int size,
+char *dump_stat_counter(char *buf, size_t size,
 		       const char *msg, uint64_t value)
 {
 	buf[size-1] = 0;
@@ -109,7 +109,7 @@ char *dump_stat_counter(char *buf, int size,
 	return buf;
 }
 
-char *dump_stat_stat(char *buf, int size,
+char *dump_stat_stat(char *buf, size_t size,
 		    const char *msg, const char *unit, struct rng_stat *stat)
 {
 	double avg = 0.0;
@@ -125,7 +125,7 @@ char *dump_stat_stat(char *buf, int size,
 	return buf;
 }
 
-char *dump_stat_bw(char *buf, int size,
+char *dump_stat_bw(char *buf, size_t size,
 		  const char *msg, const char *unit, 
 		  struct rng_stat *stat, 
 		  uint64_t blocksize)

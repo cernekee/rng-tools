@@ -1,3 +1,33 @@
+rng-tools (2-unofficial-mt.4-1) unstable; urgency=low
+
+  * New upstream version
+    + No real changes, upstream just accepted Debian patches
+    + Added Jeff Garzik to copyright notice for rngd
+  * New unofficial version
+    * Get kernel entropy pool size from /proc, and use that to allow
+      the user to specify --fill-watermark in percentage values relative
+      to the pool size, as well as in absolute bit size
+    * Limit --fill-watermark dynamically to the kernel entropy pool size
+      (closes: #274479)
+    * Better input validation when processing command line parameters
+    * Cosmetic changes to code (signed/unsigned cleanups, plus some
+      other code/formatting cleanups)
+    * Minor manpage typos and formatting fixes
+    * Add myself to copyright notice for rngd, due to the threading code,
+      and all the other small features
+    * Log PID to syslog
+    * Make sure we do have work to do before we leave the sink and FIPS
+      thread startup code
+    * Sync rngtest "entropy source returned EOF" message to be the same
+      as rngd's
+  * Add watch file for uscan/DEHS
+  * Use automake 1.9 in build
+  * Minor updates to debian/copyright
+  * Update logcheck.ignore for LOG_PID logging, and force-feed the ignore
+    file to violations.ignore.d/ to workaround logcheck braindamage
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Mon,  4 Oct 2004 10:46:21 -0300
+
 rng-tools (1.1-unofficial-mt.3-1) unstable; urgency=low
 
   * New unofficial version:

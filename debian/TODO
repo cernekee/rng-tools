@@ -1,8 +1,13 @@
-$Id: TODO,v 1.6.2.22 2004/06/05 15:24:33 hmh Exp $
+$Id: TODO,v 1.6.2.25 2004/10/03 20:21:37 hmh Exp $
 
 Nextc:::
  - detect/store overflow on stat counters
  - stats: average only since last stat dump.
+
+Ideas:
+ - TCP/IP sink mode (multiple streams)
+ - TCP/IP source mode, compatible with the above
+ - Protect the above with good crypto (TLS).
 
 Backburner:
  - i18n (including argp)

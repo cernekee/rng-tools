@@ -174,19 +174,20 @@ channel immediately.
 .TP
 \fB1\fR if \fIrng-source\fR is misbehaving.
 .TP
-\fB10\fR if there are problems with the parameters, or if
-\fIrngd\fR fails to lock the \fIpidfile\fR, or if \fIrng-device\fR
-cannot be opened..
+\fB10\fR if there are problems with the parameters, or if \fIrngd\fR fails to lock the \fIpidfile\fR, or if \fIrng-device\fR cannot be opened.
 .TP
 \fB11\fR if an input/output error happens.
 .TP
-\fB12\fR if an operating system or resource starvation error
-happens..
+\fB12\fR if an operating system or resource starvation error happens.
 
 .SH BUGS
-The /dev/random driver in Linux kernels up to 2.4.25 inclusive (and probably
+The /dev/random driver in Linux kernels up to 2.4.28 inclusive (and probably
 later ones too) has broken entropy accounting, and fails to do catrastrophic
 reseeds correctly.  This has been fixed in Linux 2.6.
+.PP
+It is a very bad idea to shrink the capacity of the kernel entropy pool
+with rngd running, as it may misbehave the next time the pool drains.  
+Please restart rngd every time the kernel entropy pool size is changed.
 
 .SH FILES
 @DEVRANDOM@, @DEVHWRANDOM@, @PIDFILE@,
