@@ -26,8 +26,12 @@
 
 #include "rng-tools-config.h"
 
+/* For printf types macros (PRIu64) */
+#define __STDC_FORMAT_MACROS
+
 #include <unistd.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -100,7 +104,7 @@ char *dump_stat_counter(char *buf, int size,
 		       const char *msg, uint64_t value)
 {
 	buf[size-1] = 0;
-	snprintf(buf, size-1, "%s%s: %llu", stat_prefix, msg, value);
+	snprintf(buf, size-1, "%s%s: %" PRIu64 , stat_prefix, msg, value);
 
 	return buf;
 }
@@ -114,7 +118,8 @@ char *dump_stat_stat(char *buf, int size,
 		avg = (double)stat->sum / stat->num_samples;
 
 	buf[size-1] = 0;
-	snprintf(buf, size-1, "%s%s: (min=%llu; avg=%.3f; max=%llu)%s",
+	snprintf(buf, size-1,
+		 "%s%s: (min=%" PRIu64 "; avg=%.3f; max=%" PRIu64 ")%s",
 		 stat_prefix, msg, stat->min, avg, stat->max, unit);
 
 	return buf;
