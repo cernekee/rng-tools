@@ -1,0 +1,83 @@
+#! /bin/sh
+#
+# rng-tools	initscript for the rng-tools package
+#		Copr. 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
+#		Copr. 2002 by Viral Shah <viral@debian.org>
+#
+# $Id: rng-tools.init,v 1.4 2004/02/09 03:23:31 hmh Exp $
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/rngd
+NAME=rngd
+DESC="Hardware RNG entropy gatherer daemon"
+DEVICE=/dev/hwrandom
+
+test -f $DAEMON || exit 0
+
+set -e
+
+START="--start --quiet --pidfile /var/run/$NAME.pid --exec $DAEMON"
+
+verify_device () {
+	[ -c "$DEVICE" ] || {
+		echo "Missing $DEVICE, please create it with:" >&2
+		echo "mknod $DEVICE c 10 183" >&2
+		exit 1
+	}
+}
+
+case "$1" in
+  start)
+  	verify_device
+	echo -n "Starting $DESC: "
+	if start-stop-daemon ${START} >/dev/null 2>&1 ; then
+		echo "$NAME."
+	else
+		if start-stop-daemon --test ${START} >/dev/null 2>&1; then
+			echo "(failed)."
+			exit 1
+		else
+			echo "${DAEMON} already running."
+			exit 0
+		fi
+	fi
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+	if start-stop-daemon --stop --quiet --pidfile /var/run/$NAME.pid \
+		--startas $DAEMON >/dev/null 2>&1 ; then
+			echo "$NAME."
+	else
+		echo "(failed)."
+	fi
+	;;
+  restart|force-reload)
+	$0 stop && {
+	  echo -n "Waiting for complete shutdown..."
+	  i=5
+	  while [ $i -gt 0 ] ; do
+	  	if start-stop-daemon --start --test \
+		   --pidfile /var/run/$NAME.pid \
+		   --exec $DAEMON >/dev/null 2>&1 ; then
+		       break
+		fi
+		sleep 2s
+		i=$(($i - 1))
+		echo -n "."
+	  done
+	  [ $i -eq 0 ] && {
+		echo
+		echo "fatal: incomplete shutdown detected, aborting."
+		exit 1
+	  }
+	  echo
+	}
+	exec $0 start	    
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart|force-reload}" 1>&2
+	exit 1
+	;;
+esac
+
+exit 0

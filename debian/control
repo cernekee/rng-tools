@@ -1,0 +1,20 @@
+Source: rng-tools
+Section: utils
+Priority: optional
+Maintainer: Henrique de Moraes Holschuh <hmh@debian.org>
+Build-Depends: debhelper (>> 4)
+Standards-Version: 3.6.1
+
+Package: rng-tools
+Architecture: i386
+Depends: ${shlibs:Depends}, makedev | devfsd
+Provides: intel-rng-tools
+Replaces: intel-rng-tools
+Conflicts: intel-rng-tools
+Description: Daemon to use the Intel/AMD/VIA Hardware RNG
+ This daemon feeds data from the hwrandom device (which currently
+ supports the hardware Random Number Generators in recent Intel/AMD/VIA
+ chipsets) to the kernel's random number entropy pool, after first
+ checking the data to ensure that it is properly random.
+ .
+ The hw_random kernel module is required to use this package.

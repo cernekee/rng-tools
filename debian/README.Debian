@@ -1,0 +1,65 @@
+rng-tools for Debian
+$Id: README.Debian,v 1.3 2004/02/09 03:47:28 hmh Exp $
+=====================================================
+
+This program runs conditioning tests (from FIPS 140-1) on a source of random
+data, and if that data passes the FIPS test, feeds it back as trusted entropy
+to the in-kernel random pool.
+
+FIPS 140-1 is available at 
+http://csrc.nist.gov/publications/fips/fips140-1/fips1401.htm
+for the curious.
+
+It was designed to be the user-space companion to the i810_rng and hw_random
+drivers of the linux kernel, but it will work with anything that outputs random
+bytes to a device or named pipe.
+
+The initscript expects to read random data from /dev/hwrandom, and tries to
+feed entropy back to /dev/random.  DevFS users, you better create these links.
+/dev/hwrandom is a character device, major 10, minor 183 for the usual Linux
+hardware RNG drivers.
+
+If the RNG is not generating random output (as verified by FIPS 140-1, that
+is), rngd will log errors, and will NOT touch the kernel entropy pool, so no
+lasting harm will be done (other than wasting CPU time).
+
+
+
+Testing rngd
+------------
+
+To do this, you must first make sure your machine is in a position to survive
+losing all ability to generate real random numbers for a small while.  It is
+a good idea to unplug it from the network while the tests are running.
+
+With rngd stopped (and as root), do:
+  cat /dev/random | hexdump -C
+  
+You should notice how the hexdump stops for a small while when the kernel
+entropy pool is drained empty.
+
+Now start rngd, and run the test again.  The stops due to an empty entropy pool
+should be either much shorter, or inexistent.  Leave it running for a while,
+and watch the system log (facility DAEMON) for warnings of failed FIPS tests.
+You should not see any, or they should be _extremely_ rare.
+
+
+
+The Intel Hardware RNG
+----------------------
+
+The Intel hardware RNG is provided by the Intel FWH (82802AB or 82802AC)
+_optional_ component of the 8xx chipsets.  This chip hosts the firmware (BIOS)
+and the RNG, and is directly connected to the LPC bus in the South Bridge.
+
+It shows up as memory mapped by the South Bridge, and its presence is difficult
+to detect.  Regardless, the kernel driver has very weak code to detect the FWH,
+and is easily misled into believing there is an RNG active, when in fact there
+isn't even an Intel FWH in the mainboard.
+
+Almost no one but Intel itself uses this component (its main use is to host the
+system BIOS, which a cheaper Flash device without a RNG can also do just as
+easily).  Intel Desktop Boards usually have a 82802AB FWH, and the RNG in those
+is usually functional.
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Wed,  7 Jan 2004 23:19:56 -0200

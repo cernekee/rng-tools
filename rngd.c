@@ -43,7 +43,11 @@
 #include <stdlib.h>
 #include <argp.h>
 #include <syslog.h>
+#include <sysexits.h>
 
+#ifdef HAVE_FLOCK
+#  include <sys/file.h>
+#endif
 
 /*
  * argp stuff
@@ -72,12 +76,16 @@ static struct argp_option options[] = {
 	{ "timeout", 't', "nnn", 0,
 	  "Interval written to random-device when the entropy pool is full, in seconds (default: 60)" },
 
+	{ "pidfile", 'p', "file", 0,
+	  "Path to file to write PID to in daemon mode (default: /var/run/rngd.pid)" },
+
 	{ 0 },
 };
 
 struct arguments {
 	char *random_name;
 	char *rng_name;
+	char *pidfile_name;
 	
 	int random_step;
 	double poll_timeout;
@@ -88,6 +96,7 @@ struct arguments {
 static struct arguments default_arguments = {
 	rng_name:	"/dev/hwrandom",
 	random_name:	"/dev/random",
+	pidfile_name:	"/var/run/rngd.pid",
 	poll_timeout:	60,
 	random_step:	64,
 	daemon:		1,
@@ -103,6 +112,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 		break;
 	case 'r':
 		arguments->rng_name = arg;
+		break;
+	case 'p':
+		arguments->pidfile_name = arg;
 		break;
 	case 't': {
 		float f;
@@ -149,6 +161,44 @@ static int am_daemon;
 	} \
 } while (0)
 
+/* 
+ * Write our pid to our pidfile, and lock it
+ */
+static FILE *daemon_lockfp = NULL;
+static int daemon_lockfd;
+
+void get_lock(const char* pidfile_name)
+{
+    int otherpid = 0;
+
+    if (!daemon_lockfp) {
+	    if (((daemon_lockfd = open(pidfile_name, O_RDWR|O_CREAT, 0644)) == -1 )
+		|| ((daemon_lockfp = fdopen(daemon_lockfd, "r+"))) == NULL) {
+		    message(LOG_DAEMON|LOG_ERR, "can't open or create %s", pidfile_name);
+		    exit (EX_USAGE);
+    	    }
+    }
+
+#ifdef HAVE_FLOCK
+    if ( flock(daemon_lockfd, LOCK_EX|LOCK_NB) != 0 ) {
+#else
+    if ( lockf(fileno(daemon_lockfp), F_TLOCK, 0) != 0 ) {
+#endif
+    		rewind(daemon_lockfp);
+		fscanf(daemon_lockfp, "%d", &otherpid);
+		message(LOG_DAEMON|LOG_ERR, "can't lock %s, running daemon's pid may be %d",
+		      pidfile_name, otherpid);
+		exit (EX_USAGE);
+	    }
+
+    fcntl(daemon_lockfd, F_SETFD, 1);
+
+    rewind(daemon_lockfp);
+    fprintf(daemon_lockfp, "%d\n", (int) getpid());
+    fflush(daemon_lockfp);
+    ftruncate(fileno(daemon_lockfp), ftell(daemon_lockfp));
+}
+
 
 /*
  * FIPS test
@@ -159,6 +209,7 @@ static int am_daemon;
  * number of bytes required for a FIPS test.
  * do not alter unless you really, I mean
  * REALLY know what you are doing.
+ * (and make sure it is an even number)
  */
 #define FIPS_THRESHOLD 2500
 
@@ -180,9 +231,12 @@ static int am_daemon;
 *  For argument sake I tested /dev/urandom with these tests and it
 *  took 142,095 tries before I got a failure, and urandom isn't as
 *  random as random :)
+*
+*  hmh@debian.org: I've added the continuous run test, as per FIPS
+*  140-1 4.11.2.
 */
 
-static int poker[16], runs[12];
+static int poker[16], runs[12], last16;
 static int ones, rlength = -1, current_bit, longrun;
 
 /*
@@ -231,8 +285,12 @@ static int rng_run_fips_test (unsigned char *buf)
 	int i, j;
 	int rng_test = 0;
 
-	for (i=0; i<FIPS_THRESHOLD; i++) {
+	for (i=0; i<FIPS_THRESHOLD; i += 2) {
+		int new16 = buf[i] | ( buf[i+1] << 8 );
+		if (new16 == last16) rng_test |= 16;
+		last16 = new16;
 		rng_fips_test_store(buf[i]);
+		rng_fips_test_store(buf[i+1]);
 	}
 
 	/* add in the last (possibly incomplete) run */
@@ -272,8 +330,6 @@ static int rng_run_fips_test (unsigned char *buf)
 		rng_test |= 4;
 	}
 	
-	rng_test = !rng_test;
-
 	/* finally, clear out FIPS variables for start of next run */
 	memset (poker, 0, sizeof (poker));
 	memset (runs, 0, sizeof (runs));
@@ -348,9 +404,8 @@ static void do_loop(int rng_fd, int random_fd, int random_step,
 		xread(rng_fd, buf, sizeof buf);
 
 		fips = rng_run_fips_test(buf);
-
-		if (!fips) {
-			message(LOG_DAEMON|LOG_ERR, "failed fips test\n");
+		if (fips) {
+			message(LOG_DAEMON|LOG_ERR, "failed fips test: %02x\n", fips);
 			sleep(1);
 			continue;
 		}
@@ -362,21 +417,43 @@ static void do_loop(int rng_fd, int random_fd, int random_step,
 		}
 	}
 }
-		
+
+static void discard_initial_data(int rng_fd)
+{
+	/* Trash 32 bits of what is probably stale (non-random)
+	 * initial state from the RNG.  For Intel's, 8 bits would
+	 * be enough, but since AMD's generates 32 bits at a time...
+	 * 
+	 * The kernel drivers should be doing this at device powerup,
+	 * but at least up to 2.4.24, it doesn't. */
+	unsigned char tempbuf[4];
+	xread (rng_fd, tempbuf, sizeof tempbuf);
+
+	/* Bootstrap FIPS test, sacrificing 16 bits of possibly
+	 * good random data.  Better this than risk 2498 bytes 
+	 * of wastage if the first FIPS test fails. */
+	xread (rng_fd, tempbuf, 2);
+	last16 = tempbuf[0] | (tempbuf[1] << 8);
+}
+
 int main(int argc, char **argv)
 {
 	int rng_fd;
 	int random_fd;
+	int fd;
 	struct arguments *arguments = &default_arguments;
 
 	argp_parse(&argp, argc, argv, 0, 0, arguments);
+
+	/* close useless FDs we might have gotten somehow */
+	for(fd = 3; fd < 250; fd++) (void) close(fd);
 
 	rng_fd = open(arguments->rng_name, O_RDONLY);
 
 	if (rng_fd < 0) {
 		message(LOG_DAEMON|LOG_ERR, "can't open RNG file %s: %s\n",
 			arguments->rng_name, strerror(errno));
-		exit(1);
+		return EX_USAGE;
 	}
 	
 	random_fd = open(arguments->random_name, O_RDWR);
@@ -384,23 +461,33 @@ int main(int argc, char **argv)
 	if (random_fd < 0) {
 		message(LOG_DAEMON|LOG_ERR, "can't open random file %s: %s\n",
 			arguments->random_name, strerror(errno));
-		exit(1);
+		return EX_USAGE;
 	}
 
 	if (arguments->daemon) {
-		am_daemon = 1;
+		/* check if another rngd is running, create pidfile and lock it */
+		get_lock(arguments->pidfile_name);
 
 		if (daemon(0, 0) < 0) {
-			fprintf(stderr, "can't daemonize: %s\n",
-				strerror(errno));
-			return 1;
+			message(LOG_DAEMON|LOG_ERR, "can't daemonize: %s\n",
+					strerror(errno));
+			return EX_OSERR;
 		}
 
 		openlog("rngd", 0, LOG_DAEMON);
+		am_daemon = 1;
+
+		/* update pidfile */
+		get_lock(arguments->pidfile_name);
 	}
+
+	/* At startup, discard the first 4 bytes of random data, to
+	 * make sure we are not getting stale data from the hardware RNG.
+	 * The kernel driver should do it, but it is buggy */
+	discard_initial_data(rng_fd);
 
 	do_loop(rng_fd, random_fd, arguments->random_step,
 		arguments->poll_timeout ? : -1.0);
 
-	return 0;
+	return EX_OK;
 }

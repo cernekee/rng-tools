@@ -1,0 +1,100 @@
+#!/usr/bin/make -f
+# debian/rules for rng-tools
+# GNU copyright 1997 to 1999 by Joey Hess.
+# Copyright (c) 2003 by Henrique de Moraes Holschuh
+# Published under the GNU GPL license
+# Based on previous work by Viral Shah <viral@debian.org>.
+#
+# $Id: rules,v 1.3 2004/02/09 03:32:57 hmh Exp $
+
+# DebHelper control
+export DH_ALWAYS_EXCLUDE=CVS
+
+export DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+export DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+DEBUGFLAGS=-g
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	DEBUGFLAGS += -O0
+else
+	DEBUGFLAGS += -O2
+endif
+
+configure:
+	./autogen.sh
+
+configure-stamp:
+	dh_testdir
+
+	rm -rf autom4te.cache
+	CFLAGS="-Wall -pipe $(DEBUGFLAGS)" ./configure \
+	  --prefix=/usr \
+	  --mandir=\$${prefix}/share/man \
+	  --infodir=\$${prefix}/share/info
+
+	touch configure-stamp
+
+build: configure-stamp build-stamp
+build-stamp:
+	dh_testdir
+
+	$(MAKE)
+
+	touch build-stamp
+
+clean:	configure
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp configure-stamp
+	rm -rf autom4te.cache
+
+	-$(MAKE) clean
+	-$(MAKE) distclean
+
+	dh_clean
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/rng-tools
+
+# Build architecture-independent files here.
+binary-indep: build install
+# We have nothing to do by default.
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+#	dh_installdebconf	
+	dh_installdocs
+#	dh_installexamples
+#	dh_installmenu
+#	dh_installlogrotate
+#	dh_installemacsen
+#	dh_installpam
+#	dh_installmime
+	dh_installmodules
+	dh_installinit
+#	dh_installcron
+	dh_installman
+#	dh_installinfo
+#	dh_undocumented
+	dh_installchangelogs ChangeLog
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+#	dh_makeshlibs
+	dh_installdeb
+#	dh_perl
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install

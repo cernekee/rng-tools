@@ -1,0 +1,8 @@
+rng-tools-config.h.in
+autom4te.cache
+depcomp
+mkinstalldirs
+missing
+install-sh
+configure
+Makefile.in
