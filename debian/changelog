@@ -1,3 +1,11 @@
+rng-tools (2-unofficial-mt.8-5) unstable; urgency=high
+
+  * Fix initscript, thanks to Clint Adams <schizo@debian.org>
+    (closes: #295321)
+  * Urgency high to get this simple fix into testing ASAP
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Mon, 14 Feb 2005 23:58:37 -0200
+
 rng-tools (2-unofficial-mt.8-4) unstable; urgency=high
 
   * Fix bad off-by-one error on the FIFO queue allocation that has been
