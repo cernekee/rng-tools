@@ -1,3 +1,12 @@
+rng-tools (1.1-unofficial-mt-3) unstable; urgency=low
+
+  * Upload to unstable, since Jeff Garzik seems to be otherwise
+    busy and the upstream merge has halted for some weeks now.
+  * Ack bugs fixed by previous uploads to experimental:
+    closes: #248548, #239810
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Mon, 24 May 2004 01:50:10 -0300
+
 rng-tools (1.1-unofficial-mt-2) experimental; urgency=low
 
   * Use simple MAKEDEV calls, and kill all legacy "let's fix the

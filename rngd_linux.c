@@ -53,8 +53,6 @@
 #include "rngd_threads.h"
 #include "rngd_linux.h"
 
-#define KERNEL_ENTROPY_POOL_SIZE 4096
-
 /* Kernel output device */
 static int random_fd;
 
