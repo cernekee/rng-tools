@@ -5,7 +5,10 @@
 # Published under the GNU GPL license
 # Based on previous work by Viral Shah <viral@debian.org>.
 #
-# $Id: rules,v 1.3.2.4 2004/10/03 20:38:50 hmh Exp $
+# $Id: rules,v 1.3.2.4.2.5 2005/02/01 09:00:10 hmh Exp $
+
+PACKAGE:=rng-tools
+PKGDIR:=$(CURDIR)/debian/$(PACKAGE)
 
 # DebHelper control
 export DH_ALWAYS_EXCLUDE=CVS
@@ -59,15 +62,35 @@ install: build
 	dh_clean -k
 	dh_installdirs
 
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/rng-tools
+	$(MAKE) install DESTDIR=$(PKGDIR)
 
         # Install logcheck files
-	mkdir -p debian/rng-tools/etc/logcheck/ignore.d.server
+	mkdir -p $(PKGDIR)/etc/logcheck/ignore.d.server
 	install -m 644 debian/logcheck.ignore \
-	  $(CURDIR)/debian/rng-tools/etc/logcheck/ignore.d.server/rng-tools
-	mkdir -p debian/rng-tools/etc/logcheck/violations.ignore.d
+	  $(PKGDIR)/etc/logcheck/ignore.d.server/rng-tools
+	mkdir -p $(PKGDIR)/etc/logcheck/violations.ignore.d
 	install -m 644 debian/logcheck.ignore \
-	  $(CURDIR)/debian/rng-tools/etc/logcheck/violations.ignore.d/rng-tools
+	  $(PKGDIR)/etc/logcheck/violations.ignore.d/rng-tools
+
+	# Install modprobe.d files
+	mkdir -p $(PKGDIR)/etc/modprobe.d
+	install -m 644 debian/$(PACKAGE).modprobe \
+	  $(PKGDIR)/etc/modprobe.d/$(PACKAGE)
+
+	# Install lintian and linda overrides, if any
+	cd debian ; \
+	for i in *.linda ; do \
+	    [ -r "$$i" ] && { \
+		mkdir -p "$${i%%.linda}/usr/share/linda/overrides" ;\
+		install  -m 644 "$$i" "$${i%%.linda}/usr/share/linda/overrides/$${i%%.linda}" ;\
+	    } ;\
+	done ;\
+	for i in *.lintian ; do \
+	    [ -r "$$i" ] && { \
+		mkdir -p "$${i%%.lintian}/usr/share/lintian/overrides" ;\
+		install  -m 644 "$$i" "$${i%%.lintian}/usr/share/lintian/overrides/$${i%%.lintian}" ;\
+	    } ;\
+	done
 
 # Build architecture-independent files here.
 binary-indep: build install

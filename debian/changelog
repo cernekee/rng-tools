@@ -1,3 +1,13 @@
+rng-tools (2-unofficial-mt.8-2) unstable; urgency=low
+
+  * Install modprobe.d file mapping char-major-10-183, /dev/hwrandom,
+    /dev/hw_random and /dev/misc/hw_random to the hw_random module
+    (closes: #287938)
+  * Add lintian overrides for
+    description-synopsis-starts-with-a-capital-letter
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue,  1 Feb 2005 06:55:36 -0200
+
 rng-tools (2-unofficial-mt.8-1) unstable; urgency=low
 
   * New unofficial version
