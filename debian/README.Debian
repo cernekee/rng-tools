@@ -1,15 +1,21 @@
 rng-tools for Debian
-$Id: README.Debian,v 1.9 2004/04/06 14:27:47 hmh Exp $
+$Id: README.Debian,v 1.6.2.6 2004/05/09 17:22:01 hmh Exp $
 =====================================================
 
-This program runs conditioning tests (from FIPS 140-2, edition of 2002-10-10)
-on a source of random data, and if that data passes the FIPS test, feeds it
-back as trusted entropy to the in-kernel entropy pool.  Thus, it increases the
-amount of true random data the kernel has available.
+NOTICE:
+This is an unofficial version of rng-tools with a lot of added functionality
+and bugs, for which I assume total blame.  Don't bother rng-tools upstream
+with problems you find in this version of rng-tools.
 
-If the kernel runs out of entropy, reads /dev/random will block, and all
-network activity that needs random numbers (such as TCP/IP) will halt until
-the kernel manages to get a bit more of entropy.
+
+rngd is a daemon that runs conditioning tests (from FIPS 140-2, edition of
+2002-10-10) on a source of random data, and if that data passes the FIPS test,
+feeds it back as trusted entropy to the in-kernel entropy pool.  Thus, it
+increases the amount of true random data the kernel has available.
+
+If the kernel runs out of entropy, reading from /dev/random will block, and all
+network activity that needs random numbers (such as TCP/IP) will halt until the
+kernel manages to get a bit more of entropy.
 
 See the rngd(8) manpage for more information.
 
@@ -22,16 +28,21 @@ for the curious.
 
 It was designed to be the user-space companion to the i810_rng and hw_random
 drivers of the linux kernel, but it will work with anything that outputs random
-bytes to a device or named pipe.
+bytes to a device or named pipe.  The Debian package is engineered to plug
+to the hw_random device, since i810_rng development appears to have stopped.
 
 The initscript expects to read random data from /dev/hwrandom, and tries to
 feed entropy back to /dev/random.  It also knows about /dev/misc/hw_random, for
 udev.  /dev/hwrandom is a character device, major 10, minor 183 for the usual
 Linux hardware RNG drivers.
 
-If the RNG is not generating random output (as verified by FIPS 140-1, that
+If the RNG is not generating random output (as verified by FIPS 140-2, that
 is), rngd will log errors, and will NOT touch the kernel entropy pool, so no
-lasting harm will be done (other than wasting CPU time).
+lasting harm will be done (other than wasting CPU time).  If too many errors
+happen, rngd will exit.
+
+rngtest allows one to test the hw_random device directly, and should be run
+only with rngd stopped.
 
 
 FAQ
@@ -65,43 +76,42 @@ FAQ
 Testing rngd
 ------------
 
-First, test if the TRNG (hwrandom device) is generating numbers:
+Some useful commands:
+To stop rngd: /etc/init.d/rng-tools stop
+To start rngd: /etc/init.d/rng-tools start
+
+rngtest will be of great help for testing hw_random and /dev/[u]random.  Read
+its manpage rngtest(1) for details.  You may want to use rngtest -b n or -t n
+if your TRNG is slow.
 
 With rngd stopped (and as root), do:
-  cat /dev/hwrandom | hexdump -C
+  rngtest -c 1 </dev/hwrandom   (or whatever your hw_random device might be)
 
-If you get no output, either your TRNG is not working, it is not supported, or
-the kernel driver is broken.  rngd will _not_ work (but it won't output any
-errors, since it will block waiting for data from the TRNG, that will never
-arrive).
+If you get no output in a small while, hit ^C (or send a TERM signal using
+kill) to interrupt rngtest.  If rngtest output states that it hasn't received
+any bits from the TRNG, then either your TRNG is not working, it is not
+supported, or the kernel driver is broken.  rngd will _not_ work (but it won't
+output any errors, since it will block waiting for data from the TRNG, that
+will never arrive).
 
-You can measure the available TRNG bandwidth using something that counts data
-read from a device.  E.g. install the "cstream" package, and do:
+If rngtest reports that one of the FIPS tests failed, try it again with more
+blocks:
+  rngtest -c 50 </dev/hwrandom
 
-With rngd stopped (and as root), do:
-  cstream -v 1 -n 100k -i /dev/hwrandom -o -
+If more than a few blocks fail, your TRNG isn't working right, and there is
+nothing that rng-tools can do.  It is probably unsafe to use rngd.  In fact,
+chances are you will see no FIPS errors at all with a good TRNG.
 
-If the TRNG is working, it is time to test rngd.
+You can use rngtest to measure the available bandwidth and quality (as far
+as FIPS tests can measure it) of /dev/random and /dev/urandom, too.
 
-To do this, you must first make sure your machine is in a position to survive
-losing all ability to generate real random numbers for a small while.  It is
-a good idea to unplug it from the network while the tests are running.
+To test /dev/random, you must first make sure your machine is in a position to
+survive losing all ability to generate real random numbers for a small while.
+It is a good idea to unplug it from the network while the tests are running,
+and to use something like rngtest -c 10 to get meaningful averages.
 
-With rngd stopped (and as root), do:
-  cat /dev/random | hexdump -C
-  
-You should notice how the hexdump stops for a small while when the kernel
-entropy pool is drained empty.  You could also use cstream (as shown before) to
-measure the available /dev/random bandwidth without rngd.
-
-Now start rngd, and run the test again.  The stops due to an empty entropy pool
-should be either much shorter, or inexistent.  The bandwidth available should
-be much higher (at the very least, it should be about the same as the bandwidth
-available from the TRNG). 
-
-Leave the test running for a while, and watch the system log (facility DAEMON)
-for warnings of failed FIPS tests.  You should not see any, or they should be
-rare.
+Running rngtest against /dev/random with rngd running should show a remarkable
+improvement on /dev/random bandwidth over the measurements with rngd stopped.
 
 
 The Intel Hardware RNG
@@ -125,11 +135,13 @@ those is usually functional.  Intel Server Boards usually do NOT have a
 http://developer.intel.com/design/chipsets/rng/CRIwp.htm has interesting
 documentation on how the RNG behaves.  An important point to know is that it
 has a variable bit rate, and that its entrpy (H) is better than 0.999.
+An alternate URL for that document is
+http://www.cryptography.com/resources/whitepapers/IntelRNG.pdf
 
-Measurements on my D875PBZ show that you can expect an average of 24kbit/s of
-random data from the 2.4.24 kernel driver (Intel documentation suggests this
-should be on the order of 75kbit/s).  The kernel driver will eat up a LOT of
-"system time", I hope this can be corrected in future versions of the driver.
+Measurements on a D875PBZ show that you can expect an average of 24kbit/s of
+random data from the 2.4.24 kernel driver (documentation suggests this should
+be on the order of 75kbit/s).  The kernel driver will eat up a LOT of "system
+time", I hope this can be corrected in future versions of the driver.
 
 /dev/random output in the test system archived an average of 120kbit/s with
 rngd active, probably due to the entropy accounting bugs in most 2.4 kernels.
@@ -146,6 +158,9 @@ unlike Intel's.
 
 An excellent site to keep an eye for enhanced support for VIA's
 TRNG is: http://peertech.org/hardware/viarng/
+
+A paper describing the Padlock engine is at:
+http://www.cryptography.com/resources/whitepapers/VIA_rng.pdf
 
 The suggested -H paremeter for the Padlock TRNG is 0.75 if the whitener is
 disabled, or 0.98 if the withener is enabled.  You're strongly advised to run

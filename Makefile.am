@@ -4,13 +4,22 @@
 
 SUBDIRS		= contrib
 
-sbin_PROGRAMS	= rngd
-bin_PROGRAMS	= rngtest
-man_MANS	= rngd.8 rngtest.1
+sbin_PROGRAMS	 = rngd
+bin_PROGRAMS	 = rngtest
+man_MANS	 = rngd.8 rngtest.1
+noinst_LIBRARIES = librngd.a
 
-common_sources  = fips.h fips.c
-rngd_SOURCES	= $(common_sources) rngd.c
-rngtest_SOURCES	= $(common_sources) exits.h stats.h stats.c rngtest.c
+common_sources	= exits.h fips.h stats.h
+rngd_SOURCES	= $(common_sources) rngd.h rngd.c \
+		  rngd_threads.h rngd_threads.c \
+		  rngd_entsource.h rngd_entsource.c \
+		  rngd_linux.h rngd_linux.c
+rngd_LDADD	= librngd.a @LIB_PTHREAD@
+
+rngtest_SOURCES	= $(common_sources) rngtest.c
+rngtest_LDADD	= librngd.a
+
+librngd_a_SOURCES = fips.h fips.c stats.h stats.c
 
 
 EXTRA_DIST	= autogen.sh

@@ -11,7 +11,7 @@ Depends: ${shlibs:Depends}, makedev (>= 2.3.1-53) | udev
 Provides: intel-rng-tools
 Replaces: intel-rng-tools
 Conflicts: intel-rng-tools
-Description: Daemon to use the Intel/AMD/VIA Hardware TRNG
+Description: Daemon to use a Hardware TRNG
  The rngd daemon acts as a bridge between a Hardware TRNG (true random number
  generator) such as the ones in some Intel/AMD/VIA chipsets, and the kernel's
  PRNG (pseudo-random number generator).
@@ -24,4 +24,7 @@ Description: Daemon to use the Intel/AMD/VIA Hardware TRNG
  does not depend on outside activity.  It may also improve the quality
  (entropy) of the randomness of /dev/random.
  .
- The hw_random kernel module is required to use this package.
+ A TRNG kernel module such as hw_random is required to use this package.
+ .
+ This is an unofficial version of rng-tools which has been extensively
+ modified to add multithreading and a lot of new functionality.

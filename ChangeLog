@@ -1,3 +1,54 @@
+STILL NOT SENT UPSTREAM:
+
+	* Use multithreading to increase the available
+	  bandwidth, now rngd can read, process FIPS tests,
+	  and feed the kernel at the same time;
+	* Store data on buffers, that can be operated
+	  independently by the threads.  Default to
+	  triple-buffering;
+	* Lock memory used as buffers of random data;
+	* Add statistics, based on ideas from mtrngd.cpp by
+	  Martin Peck <coderman@charter.net>;
+	* Detect and deal with TRNGs stuck in a failing state,
+	  using an exponential backoff and eventually giving
+	  up and exiting;
+	* Add --rng-entropy option to set the TRNG entropy
+	  per bit of data;
+	* Add --trng with some presets for various TRNGs
+	  (currently VIA and Intel TRNGs);
+	* Extensively revamped and updated manpage;
+	* Configure /dev/random, /dev/hwrandom and pidfile
+	  location using autoconf, to avoid hardcoded defaults;
+
+SENT AND WAITING MERGE:
+	* pidfile support for background mode;
+	* Let the user set the fill watermark explicitly,
+	  instead of hardcoding it at 50%.  This also means we
+	  can drop the unsafe usage of RNDGETPOOL, and that
+	  rngd should work right with 2.6 kernels, now.
+
+Thu Apr 15 2004  Jeff Garzik  <jgarzik@pobox.com>
+
+	* Makefile.am, configure.ac: put common code in a lib
+
+Tue Apr  6 2004  Henrique de Moraes Holschuh <hmh@debian.org>
+
+	* rngd.c, rngtest.c: Add Copyright and license notices
+	  to --version output, as per the GNU guidelines;
+	  Improve --help output a little.
+	* rngtest.c: Cleanup logging, and exit with status 1
+	  when input drains before the first block is tested.
+	* rngtest.1.in: Minor text change.
+
+	Preparatory cleanup for merging the multithreaded 
+	code later:
+	* rngd.c: split globals to rngd.h; split linux
+	  /dev/random functionality to rngd_linux.c;
+	  split entropy source (/dev/hwrandom) functionality
+	  to rngd_entsource.c.
+	* rngd.h, rngd_linux.h, rngd_linux.c,
+	  rngd_entsource.h, rngd_entsource.c: add
+
 Tue Apr  6 2004  Jeff Garzik  <jgarzik@pobox.com>
 
 	* Release version 1.1.

@@ -4,7 +4,7 @@
 #		Copr. 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
 #		Copr. 2002 by Viral Shah <viral@debian.org>
 #
-# $Id: rng-tools.init,v 1.7 2004/04/06 14:27:47 hmh Exp $
+# $Id: rng-tools.init,v 1.6.2.4 2004/05/09 17:24:54 hmh Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/rngd
@@ -33,7 +33,7 @@ finddevice () {
 	exit 1
 }
 
-START="--start --quiet --pidfile ${PIDFILE} --exec ${DAEMON}"
+START="--start --quiet --pidfile ${PIDFILE} --startas ${DAEMON} --name ${NAME}"
 case "$1" in
   start)
 	echo -n "Starting $DESC: "
@@ -54,7 +54,8 @@ case "$1" in
   stop)
 	echo -n "Stopping $DESC: "
 	if start-stop-daemon --stop --quiet --pidfile ${PIDFILE} \
-		--startas ${DAEMON} --retry 10 >/dev/null 2>&1 ; then
+		--startas ${DAEMON} --retry 10 --name ${NAME} \
+		>/dev/null 2>&1 ; then
 			echo "${NAME}."
 	else
 		if start-stop-daemon --test ${START} >/dev/null 2>&1; then

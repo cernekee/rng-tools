@@ -1,3 +1,32 @@
+rng-tools (1.1-unofficial-mt-1) experimental; urgency=low
+
+  * Major batch of enhancements from yours thruly.  Not yet merged
+    upstream, right now consider this a temporary fork (the merge IS
+    ongoing).  Do not bother upstream with bugs against this package.
+    The new functionality may change, depending on upstream merge;
+    ChangeLog:
+     + Use multithreading to increase the available bandwidth, now rngd can
+       read, process FIPS tests, and feed the kernel at the same time;
+     + Store data on buffers, that can be operated independently by the
+       threads.  Default to triple-buffering;
+     + Lock memory used as buffers of random data;
+     + Add statistics, based on ideas from mtrngd.cpp by Martin Peck
+       <coderman@charter.net>;
+     + Detect and deal with TRNGs stuck in a failing state, using an
+       exponential backoff and eventually giving up and exiting;
+     + Revamped manpage extensively;
+     + Configure /dev/random, /dev/hwrandom and pidfile location using
+       autoconf, to avoid hardcoded defaults;
+     + Work on systems using kernel 2.6 (closes: #243319)
+  * Add logcheck ignore rules;
+  * Update README.Debian to reflect new functionality in the package;
+  * Update package description and short description a bit;
+  * Use --name and --start-as instead of --exec in initscript;
+  * postinst: ignore exit status of initscript on start (closes: #239810)
+    (yes, I have changed my mind about the issue).
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Mon, 10 May 2004 09:01:35 -0300
+
 rng-tools (1.1-1) unstable; urgency=low
 
   * New upstream source:
@@ -6,7 +35,10 @@ rng-tools (1.1-1) unstable; urgency=low
   * Minor update to README.Debian;
   * Separate recommended options by TRNG type in /etc/default/rng-tools;
   * Fix initscript to properly wait for rngd to exit on stop/restart;
-  * Update copyright file.
+  * Update copyright file;
+  * Version dependency on a makedev that knows about intel_rng (since
+    hwrandom isn't available yet), and add alternative dependency on udev.
+    Remove useless dependency on devfsd.
 
  -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue,  6 Apr 2004 11:13:34 -0300
 

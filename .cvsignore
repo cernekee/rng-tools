@@ -14,8 +14,10 @@ config.status
 stamp-h1
 .deps
 rngd
+rngtest
 rng-tools-*.tar.gz
 rngd.8
+rngtest.1
 COPYING
 INSTALL
 mkinstalldirs

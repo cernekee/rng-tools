@@ -1,11 +1,8 @@
-$Id: TODO,v 1.9 2004/03/22 16:14:24 hmh Exp $
+$Id: TODO,v 1.6.2.21 2004/05/10 12:01:29 hmh Exp $
 
-High:
- - increase FIPS bandwidth by double-buffering FIPS-approved data
+Nextc:::
+ - detect/store overflow on stat counters
+ - stats: average only since last stat dump.
 
-Low:
- - Make sure failing FIPS does not hog CPU (does it? not here)
- - protect the FIPS-approved entropy buffer against attacks (randomize
-   feed to kernel?)
- - merge in MT version of rngd?
- - ship rng benchmark stuff?
+Backburner:
+ - i18n (including argp)

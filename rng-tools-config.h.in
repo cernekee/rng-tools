@@ -1,5 +1,14 @@
 /* rng-tools-config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Name of the source TRNG device */
+#undef DEVHWRANDOM
+
+/* Name of the kernel RNG device */
+#undef DEVRANDOM
+
+/* Define to 1 if you have the `flock' function. */
+#undef HAVE_FLOCK
+
 /* Name of package */
 #undef PACKAGE
 
@@ -17,6 +26,12 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
+
+/* Name of the pidfile for rngd */
+#undef PIDFILE
+
+/* Syslog facility to use. */
+#undef SYSLOG_FACILITY
 
 /* Version number of package */
 #undef VERSION
