@@ -1,3 +1,11 @@
+rng-tools (1.1-unofficial-mt-2) experimental; urgency=low
+
+  * Use simple MAKEDEV calls, and kill all legacy "let's fix the
+    device inode" code.  Add intel_rng and i810_rng variations to
+    the initscript device search list (closes: #248548)
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue, 11 May 2004 20:37:45 -0300
+
 rng-tools (1.1-unofficial-mt-1) experimental; urgency=low
 
   * Major batch of enhancements from yours thruly.  Not yet merged

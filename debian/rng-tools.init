@@ -4,13 +4,15 @@
 #		Copr. 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
 #		Copr. 2002 by Viral Shah <viral@debian.org>
 #
-# $Id: rng-tools.init,v 1.6.2.4 2004/05/09 17:24:54 hmh Exp $
+# $Id: rng-tools.init,v 1.6.2.5 2004/05/11 23:42:55 hmh Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/rngd
 NAME=rngd
 DESC="Hardware RNG entropy gatherer daemon"
 PIDFILE=/var/run/rngd.pid
+
+DEVICELIST="/dev/hwrandom /dev/hw_random /dev/misc/hw_random /dev/intel_rng /dev/misc/i810_rng /dev/i810_rng"
 
 HRNGDEVICE=/dev/hwrandom
 RNGDOPTIONS=
@@ -21,7 +23,7 @@ test -f ${DAEMON} || exit 0
 set -e
 
 finddevice () {
-	for i in ${HRNGDEVICE} /dev/hwrandom /dev/hw_random /dev/misc/hw_random ; do
+	for i in ${HRNGDEVICE} ${DEVICELIST}; do
 		[ -c "$i" ] && {
 			HRNGDEVICE="$i"
 			return 0
