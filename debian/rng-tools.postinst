@@ -3,7 +3,7 @@
 # Copyright (c) 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
 # Copyright (c) 2002 by Viral Shah <viral@debian.org>
 # Distributed under the GNU General Public License version 2
-# $Id: rng-tools.postinst,v 1.4.2.2 2004/05/11 23:42:55 hmh Exp $
+# $Id: rng-tools.postinst,v 1.4.2.2.2.1 2005/05/11 09:29:26 hmh Exp $
 
 set -e
 
@@ -28,7 +28,10 @@ export PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 case "$1" in
   configure)
-	(cd /dev && ./MAKEDEV hwrandom || ./MAKEDEV intel_rng || true)
+  	if [ '!' -c /dev/hwrng ] && [ '!' -c /dev/misc/hwrng ] ; then
+		echo "Trying to create /dev/hwrng device inode..."
+		(cd /dev && /sbin/MAKEDEV hwrng || true)
+	fi
 	if [ -x "/etc/init.d/rng-tools" ]; then
 		update-rc.d rng-tools defaults >/dev/null
 		if [ -x /usr/sbin/invoke-rc.d ]; then

@@ -1,5 +1,5 @@
 rng-tools for Debian
-$Id: README.Debian,v 1.6.2.9 2004/12/30 10:55:28 hmh Exp $
+$Id: README.Debian,v 1.6.2.8.2.1 2005/05/11 09:29:25 hmh Exp $
 =====================================================
 
 NOTICE:
@@ -31,12 +31,12 @@ drivers of the linux kernel, but it will work with anything that outputs random
 bytes to a device or named pipe/fifo.  The Debian package is engineered to plug
 to the hw_random device, since i810_rng development appears to have stopped.
 
-The initscript expects to read random data from /dev/hwrandom, and tries to
-feed entropy back to /dev/random.  It also knows about: /dev/hw_random, 
-/dev/misc/hw_random, /dev/intel_rng, /dev/misc/i810_rng, /dev/i810_rng,
-and will use the first one it finds.
+The initscript expects to read random data from /dev/hwrng, and tries to
+feed entropy back to /dev/random.  It also knows about: /dev/misc/hwrng,
+/dev/hw_random, /dev/misc/hw_random, /dev/intel_rng, /dev/misc/intel_rng,
+/dev/i810_rng, /dev/misc/i810_rng, and will use the first it finds.
 
-/dev/hwrandom is a character device, major 10, minor 183 for the usual Linux
+/dev/hwrng is a character device, major 10, minor 183 for the usual Linux
 hardware RNG drivers.
 
 If the RNG is not generating random output (as verified by FIPS 140-2, that
@@ -54,21 +54,21 @@ only with rngd stopped.
 FAQ
 ---
 
-* Q: "I don't have a /dev/hwrandom, and I am NOT using udev or devfs.  
+* Q: "I don't have a /dev/hwrng, and I am NOT using udev or devfs.  
      How do I get one?"
-  A: mknod /dev/hwrandom c 10 183
+  A: mknod /dev/hwrng c 10 183
 
-* Q: "I don't have a /dev/hwrandom, and I AM using devfs or udev.  How do I 
+* Q: "I don't have a /dev/hwrng, and I AM using devfs or udev.  How do I 
      get one?"
   A: You should have a /dev/misc/hw_random device, IF the kernel driver has
      loaded properly.  The initscript should notice this and use this alternate
      location.
 
-* Q: "can't open RNG file /dev/hwrandom: No such device. 
+* Q: "can't open RNG file /dev/hwrng: No such device. 
       What does that mean?"
   A: The hw_random device is missing from the kernel (or disabled, maybe
      because it couldn't detect a TRNG), the hw_random module failed to 
-     install, or /dev/hwrandom has the wrong major/minor numbers. 
+     install, or /dev/hwrng has the wrong major/minor numbers. 
 
 * Q: "I have an Intel TRNG (my chipset is a i8xx, after all), but 
      rngd logs a lot of errors to syslog.  What is happening?"
@@ -97,7 +97,7 @@ its manpage rngtest(1) for details.  You may want to use rngtest -b n or -t n
 if your TRNG is slow.
 
 With rngd stopped (and as root), do:
-  rngtest -c 1 </dev/hwrandom   (or whatever your hw_random device might be)
+  rngtest -c 1 </dev/hwrng
 
 If you get no output in a small while, hit ^C (or send a TERM signal using
 kill) to interrupt rngtest.  If rngtest output states that it hasn't received
@@ -106,7 +106,7 @@ supported, or the kernel driver is broken.  rngd will _not_ work.
 
 If rngtest reports that one of the FIPS tests failed, try it again with more
 blocks:
-  rngtest -c 50 </dev/hwrandom
+  rngtest -c 50 </dev/hwrng
 
 If more than a few blocks fail, your TRNG isn't working right, and there is
 nothing that rng-tools can do.  It is probably unsafe to use rngd.  In fact,
@@ -145,15 +145,14 @@ Boards usually do NOT have a 82802AB/AC FWH.
 
 http://developer.intel.com/design/chipsets/rng/CRIwp.htm has interesting
 documentation on how the RNG behaves.  An important point to know is that it
-has a variable bit rate, and that its entropy (H) is better than 0.999.
+has a variable bit rate, and that its entrpy (H) is better than 0.999.
 An alternate URL for that document is
 http://www.cryptography.com/resources/whitepapers/IntelRNG.pdf
 
-Measurements on an Intel Desktop Board D875PBZ show that you can expect an
-average of 24kbit/s of random data from the 2.4.24 kernel driver (documentation
-suggests this should be on the order of 75kbit/s).  The kernel driver will eat
-up a LOT of "system time", I hope this can be corrected in future versions of
-the driver.
+Measurements on a D875PBZ show that you can expect an average of 24kbit/s of
+random data from the 2.4.24 kernel driver (documentation suggests this should
+be on the order of 75kbit/s).  The kernel driver will eat up a LOT of "system
+time", I hope this can be corrected in future versions of the driver.
 
 /dev/random output in the test system archived an average of 120kbit/s with
 rngd active, probably due to the entropy accounting bugs in most 2.4 kernels.
@@ -177,11 +176,5 @@ http://www.cryptography.com/resources/whitepapers/VIA_rng.pdf
 The suggested -H paremeter for the Padlock TRNG is 0.75 if the whitener is
 disabled, or 0.98 if the withener is enabled.  You're strongly advised to run
 the TRNG with the whitener enabled.
-
-For safety reasons, rngd always use 0.75 for the VIA TRNG entropy by default.
-It always enables the whitener, and it discards consecutive random bits from
-the TRNG, because there is a measurable correlation among consecutive bits.
-This means that rngd will be probably "slower" than other VIA TRNG drivers,
-but it will be safer for cryptographic use.
 
  -- Henrique de Moraes Holschuh <hmh@debian.org>

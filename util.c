@@ -29,12 +29,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <string.h>
 #include <time.h>
 #include <sys/time.h>
-#include <sys/utsname.h>
-
-#include "util.h"
 
 #include <assert.h>
 
@@ -50,26 +46,5 @@ uint64_t elapsed_time(struct timeval *start,
 		+ stop->tv_usec - start->tv_usec;
 
 	return llabs(diff);
-}
-
-/* Returns kernel support level */
-/* FIXME: track down safe 2.5 version */
-kernel_mode_t kernel_mode( void ) {
-	struct utsname buf;
-	long i;
-	char *p, *q;
-
-	if (uname(&buf)) return KERNEL_UNSUPPORTED;
-	if (!strncmp(buf.sysname, "Linux", 6)) {
-		i = strtol(buf.release, &p, 10); /* Major version */
-		if ((i != 2) || *p != '.') return KERNEL_UNSUPPORTED;
-		p++;
-		q = p;
-		i = strtol(p, &q, 10);	/* Minor version */
-		if (p == q || *q != '.' || i < 4) return KERNEL_UNSUPPORTED;
-		if (i < 6) return KERNEL_LINUX_24;
-		return KERNEL_LINUX_26;
-	}
-	return KERNEL_UNSUPPORTED;
 }
 

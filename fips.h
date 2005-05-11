@@ -25,11 +25,12 @@
 #define FIPS_RNG_BUFFER_SIZE 2500
 
 /* Context for running FIPS tests */
-typedef struct fips_ctx {
+struct fips_ctx {
 	int poker[16], runs[12];
 	int ones, rlength, current_bit, last_bit, longrun;
 	unsigned int last32;
-} fips_ctx_t;
+};
+typedef struct fips_ctx fips_ctx_t;
 
 /* Initializes the context for FIPS tests.  last32 contains
  * 32 bits of RNG data to init the continuous run test */
@@ -64,7 +65,7 @@ extern const unsigned int fips_test_mask[N_FIPS_TESTS];
  *  This funtion returns 0 if all tests passed, or a bitmask
  *  with bits set for every test that failed.
  *
- *  It returns -1 if either ctx or buf is NULL.
+ *  It returns -1 if either fips_ctx or buf is NULL.
  */
 extern int fips_run_rng_test(fips_ctx_t *ctx, const void *buf);
 

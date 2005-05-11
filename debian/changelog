@@ -1,41 +1,42 @@
-rng-tools (2-unofficial-mt.9-3) experimental; urgency=low
+rng-tools (2-unofficial-mt.10-1) unstable; urgency=high
 
-  * Sync with 2-unofficial-mt.8-5
-  * Fix initscript to be POSIX-compliant and remove typo (closes: #295321)
+  * "Last changes for Sarge (I hope)"
+  * The following changes warrant an upstream version bump:
+  + Backport selected changes from rng-tools--hmh-devo--3.0--patch-80:
+    + Upgrade udev and makedev versioned depends to require
+      hwrng naming of the hardware random device
+    + Attempt to makedev only "hwrng", deprecate all other device
+      naming for hw_random and friends (closes: #308248)
+  + Backport configure.ac tweaks, and call ./configure correctly
+  + Backport s/TRNG/HRNG/ in all docs
+  + Backport intel->intelfwh name change for Intel FWH profile
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Wed, 11 May 2005 06:43:37 -0300
+
+rng-tools (2-unofficial-mt.8-5) unstable; urgency=high
+
+  * Fix initscript, thanks to Clint Adams <schizo@debian.org>
+    (closes: #295321)
+  * Urgency high to get this simple fix into testing ASAP
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Mon, 14 Feb 2005 23:58:37 -0200
+
+rng-tools (2-unofficial-mt.8-4) unstable; urgency=high
+
   * Fix bad off-by-one error on the FIFO queue allocation that has been
     in the unofficial versions since forever.  I really need to use
     valgrind more often.
 
- -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue, 15 Feb 2005 08:15:48 -0200
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Fri, 11 Feb 2005 00:10:53 -0200
 
-rng-tools (2-unofficial-mt.9-2) experimental; urgency=low
+rng-tools (2-unofficial-mt.8-3) unstable; urgency=high
 
-  * Sync with 2-unofficial-mt.8-3:
-    * Rework initscript to detect yet another new alias for the
-      hw_random.  Now udev rules want to call it hwrng.  I love how
-      these things keep changing for no good reason.
+  * The "WTF are they smoking up there?" release
+  * Rework initscript to detect yet another new alias for the
+    hw_random.  Now udev rules want to call it hwrng.  I love how
+    these things keep changing for no good reason.
 
  -- Henrique de Moraes Holschuh <hmh@debian.org>  Thu, 10 Feb 2005 04:25:42 -0200
-
-rng-tools (2-unofficial-mt.9-1) experimental; urgency=low
-
-  * New unofficial version:
-    * Support for different input drivers
-    * Add new high-performance (several Mbit/s) VIA PadLock TRNG
-      user-space driver.  This work was sponsored by mekensleep.com,
-      in particular by Loic Dachary.  Mekensleep gave me unlimited
-      access to a VIA Nehemiah system that they bought for this purpose,
-      and which I am told will be available for the general community
-      after the rngd work is stablized.
-    * --trng=intel renamed to --trng=intelfwh (because Intel may show up
-      with something to compete with VIA's PadLock security engine)
-    * --trng=via renamed to --trng=viakernel
-  * Add NEWS.Debian file to report user-visible changes in behaviour
-  * Minor README.Debian improvements and fixes
-  * Detect running kernel version, and work around kernel 2.4 bugs in
-    entropy accounting
-
- -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue,  8 Feb 2005 23:05:24 -0200
 
 rng-tools (2-unofficial-mt.8-2) unstable; urgency=low
 

@@ -1,4 +1,3 @@
 alias char-major-10-183 hw_random
-alias /dev/hwrandom hw_random
-alias /dev/hw_random hw_random
-alias /dev/misc/hw_random hw_random
+alias /dev/hwrng hw_random
+alias /dev/misc/hwrng hw_random

@@ -194,9 +194,6 @@ static void random_add_entropy(void *buf, size_t size)
 	assert(buf != NULL);
 
 	entropy.ent_count = (int)(arguments->rng_entropy * size * 8);
-	/* Linux kernel 2.4 mode, account for 4x entropy accounting bug */
-	if (kernel == KERNEL_LINUX_24) entropy.ent_count /= 4;
-
 	entropy.size = size;
 	memcpy(entropy.data, buf, size);
 	
@@ -257,10 +254,6 @@ void *do_rng_data_sink_loop( void *trash )
 	int nready;
 	unsigned char *p;
 	struct timeval start, stop;
-
-	/* Warn of KERNEL_LINUX_24 entropy correction */
-	if (kernel == KERNEL_LINUX_24)
-		message(LOG_INFO, "Activating Linux kernel 2.4 entropy accounting bug workaround");
 
 	/*  Startup: Wait until we get some data to work on */
 	while (ISBUFFIFO_EMPTY(accepted)) {

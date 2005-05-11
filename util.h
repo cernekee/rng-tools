@@ -28,13 +28,4 @@
 extern uint64_t elapsed_time(struct timeval *start,
                               struct timeval *stop);
 
-typedef enum {
-	KERNEL_UNSUPPORTED,
-	KERNEL_LINUX_24,
-	KERNEL_LINUX_26
-} kernel_mode_t;
-
-/* Returns kernel support level */
-extern  kernel_mode_t kernel_mode( void );
-
 #endif /* UTIL__H */

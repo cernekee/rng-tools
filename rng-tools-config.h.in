@@ -1,9 +1,9 @@
 /* rng-tools-config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Path to default "stream" entropy source */
+/* Name of the source HRNG device */
 #undef DEVHWRANDOM
 
-/* Default path to kernel random device */
+/* Name of the kernel RNG device */
 #undef DEVRANDOM
 
 /* Name of package */
@@ -27,11 +27,8 @@
 /* Name of the pidfile for rngd */
 #undef PIDFILE
 
-/* Syslog facility to use */
+/* Syslog facility to use. */
 #undef SYSLOG_FACILITY
 
 /* Version number of package */
 #undef VERSION
-
-/* Include code for VIA PadLock TRNG driver */
-#undef VIA_ENTSOURCE_DRIVER

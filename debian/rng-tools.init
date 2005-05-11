@@ -4,7 +4,7 @@
 #		Copr. 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
 #		Copr. 2002 by Viral Shah <viral@debian.org>
 #
-# $Id: rng-tools.init,v 1.6.2.8 2005/02/15 10:16:23 hmh Exp $
+# $Id: rng-tools.init,v 1.6.2.5.2.4 2005/05/11 09:29:26 hmh Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/rngd
@@ -14,7 +14,7 @@ PIDFILE=/var/run/rngd.pid
 
 DEVICELIST="hwrng hw_random hwrandom intel_rng i810_rng"
 
-HRNGDEVICE=/dev/hwrandom
+HRNGDEVICE=/dev/hwrng
 RNGDOPTIONS=
 [ -r /etc/default/rng-tools ] && . /etc/default/rng-tools
 
@@ -24,7 +24,7 @@ set -e
 
 finddevice () {
 	[ -c "${HWRNGDEVICE}" ] && return 0
-	for i in ${DEVICELIST}; do
+	for i in ${DEVICELIST} ; do
 		if [ -c "/dev/$i" ] ; then
 			HRNGDEVICE="/dev/$i"
 			return 0

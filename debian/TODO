@@ -1,20 +1,30 @@
-$Id: TODO,v 1.6.2.33 2005/02/09 10:38:44 hmh Exp $
+$Id: TODO,v 1.6.2.27 2004/11/02 13:45:37 hmh Exp $
 
-! do not try to use /dev/foo in VIAPadlock mode
-  (initscript)
+** Modular arch design
 
-! find a way to waste less system time when VIA xstore
-  does not return data.  Busy-loop option.  Nanosleep
-  option (very nice to system, but only 68kbit/s on 
-  2.6).
+  goals:  input and output modules
+  input:
+    "pipe" mode: what we have now
+    "via"  mode: userspace VIA RNG support 
+             (Martin Peck <coderman@gmail.com>)
+  output:
+    "linux random" mode: what we have now
+  ? "pipe" mode: sort of what rngtest does 
+             (useful in rngd?)
+
+* new rng-via usermode code that's a via
+  entropy source, with all knobs.
+
+Command line:
+  rngd <input type> [input type options]
+
 
 * Maybe define NDEBUG to remove assert() from
   the packaged binary?
 
-Stats:
- - detect/store overflow on stat counters?
- - stats: average only since last stat dump?
- - add system resource usage stats (CPUTIME, etc)
+Nextc:::
+ - detect/store overflow on stat counters
+ - stats: average only since last stat dump.
 
 Ideas:
  - TCP/IP sink mode (multiple streams)
