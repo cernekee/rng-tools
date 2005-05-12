@@ -27,6 +27,14 @@
 #include <unistd.h>
 #include <stdint.h>
 
+/* Entropy source driver */
+typedef enum {
+	RNGD_ENTSOURCE_NONE,
+	RNGD_ENTSOURCE_UNIXSTREAM,
+	RNGD_ENTSOURCE_VIAPADLOCK
+} entropy_source_driver_t;
+extern const char *entropy_source_driver_name(entropy_source_driver_t driver);
+
 /*
  * Initialize entropy source and entropy conditioning
  */

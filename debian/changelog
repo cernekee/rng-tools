@@ -1,3 +1,9 @@
+rng-tools (2-unofficial-mt.11-1) experimental; urgency=low
+
+  * Sync with Debian sarge branch 2-unofficial-mt.10-1
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Thu, 12 May 2005 10:20:23 -0300
+
 rng-tools (2-unofficial-mt.10-1) unstable; urgency=high
 
   * "Last changes for Sarge (I hope)"
@@ -12,6 +18,12 @@ rng-tools (2-unofficial-mt.10-1) unstable; urgency=high
   + Backport intel->intelfwh name change for Intel FWH profile
 
  -- Henrique de Moraes Holschuh <hmh@debian.org>  Wed, 11 May 2005 06:43:37 -0300
+
+rng-tools (2-unofficial-mt.9-3) experimental; urgency=low
+
+  * Sync with 2-unofficial-mt.8-5
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue, 15 Feb 2005 08:15:48 -0200
 
 rng-tools (2-unofficial-mt.8-5) unstable; urgency=high
 
@@ -29,6 +41,12 @@ rng-tools (2-unofficial-mt.8-4) unstable; urgency=high
 
  -- Henrique de Moraes Holschuh <hmh@debian.org>  Fri, 11 Feb 2005 00:10:53 -0200
 
+rng-tools (2-unofficial-mt.9-2) experimental; urgency=low
+
+  * Sync with 2-unofficial-mt.8-3:
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Thu, 10 Feb 2005 04:25:42 -0200
+
 rng-tools (2-unofficial-mt.8-3) unstable; urgency=high
 
   * The "WTF are they smoking up there?" release
@@ -37,6 +55,26 @@ rng-tools (2-unofficial-mt.8-3) unstable; urgency=high
     these things keep changing for no good reason.
 
  -- Henrique de Moraes Holschuh <hmh@debian.org>  Thu, 10 Feb 2005 04:25:42 -0200
+
+rng-tools (2-unofficial-mt.9-1) experimental; urgency=low
+
+  * New unofficial version:
+    * Support for different input drivers
+    * Add new high-performance (several Mbit/s) VIA PadLock TRNG
+      user-space driver.  This work was sponsored by mekensleep.com,
+      in particular by Loic Dachary.  Mekensleep gave me unlimited
+      access to a VIA Nehemiah system that they bought for this purpose,
+      and which I am told will be available for the general community
+      after the rngd work is stablized.
+    * --trng=intel renamed to --trng=intelfwh (because Intel may show up
+      with something to compete with VIA's PadLock security engine)
+    * --trng=via renamed to --trng=viakernel
+  * Add NEWS.Debian file to report user-visible changes in behaviour
+  * Minor README.Debian improvements and fixes
+  * Detect running kernel version, and work around kernel 2.4 bugs in
+    entropy accounting
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue,  8 Feb 2005 23:05:24 -0200
 
 rng-tools (2-unofficial-mt.8-2) unstable; urgency=low
 

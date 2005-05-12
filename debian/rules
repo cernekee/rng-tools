@@ -1,11 +1,11 @@
 #!/usr/bin/make -f
 # debian/rules for rng-tools
 # GNU copyright 1997 to 1999 by Joey Hess.
-# Copyright (c) 2003 by Henrique de Moraes Holschuh
+# Copyright (c) 2003,2004 by Henrique de Moraes Holschuh
 # Published under the GNU GPL license
 # Based on previous work by Viral Shah <viral@debian.org>.
 #
-# $Id: rules,v 1.3.2.4.2.6 2005/05/11 09:29:26 hmh Exp $
+# $Id: rules,v 1.3.2.10 2005/05/12 13:27:24 hmh Exp $
 
 PACKAGE:=rng-tools
 PKGDIR:=$(CURDIR)/debian/$(PACKAGE)
@@ -22,6 +22,23 @@ ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 else
 	DEBUGFLAGS += -O2
 endif
+ifneq (,$(findstring strict,$(DEB_BUILD_OPTIONS)))
+	DEBUGFLAGS += -Werror
+endif
+
+confflags=
+# FOR AUTOCONF 2.52 AND NEWER ONLY
+ifeq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
+	confflags += --build $(DEB_HOST_GNU_TYPE)
+else
+	confflags += --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
+endif
+
+# Detect ix86 and enable VIA PadLock support
+# Debian uses i386. i586 and i686 are handled upstream
+ifneq (,$(findstring i386,$(DEB_BUILD_GNU_TYPE)))
+	confflags += --enable-viapadlock
+endif
 
 configure:
 	./autogen.sh
@@ -30,6 +47,10 @@ configure-stamp:
 	dh_testdir
 
 	rm -rf autom4te.cache
+	rm -f config.sub config.guess
+	ln -s /usr/share/misc/config.sub config.sub
+	ln -s /usr/share/misc/config.guess config.guess
+
 	rm -rf config.log config.cache
 	./configure CFLAGS="-Wall -pipe $(DEBUGFLAGS)" \
 	  --prefix=/usr \
@@ -52,9 +73,14 @@ clean:	configure
 	rm -f build-stamp configure-stamp
 	rm -rf autom4te.cache
 
+	rm -f config.sub config.guess
+	ln -s /usr/share/misc/config.sub config.sub
+	ln -s /usr/share/misc/config.guess config.guess
+
 	-$(MAKE) clean
 	-$(MAKE) distclean
 
+	rm -f config.sub config.guess
 	rm -rf config.log config.cache
 
 	dh_clean

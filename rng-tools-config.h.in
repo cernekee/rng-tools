@@ -32,3 +32,6 @@
 
 /* Version number of package */
 #undef VERSION
+
+/* Include code for VIA PadLock TRNG driver */
+#undef VIA_ENTSOURCE_DRIVER

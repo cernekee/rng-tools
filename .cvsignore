@@ -1,3 +1,5 @@
+config.sub
+config.guess
 autom4te.cache
 depcomp
 install-sh
