@@ -4,7 +4,7 @@
 #		Copr. 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
 #		Copr. 2002 by Viral Shah <viral@debian.org>
 #
-# $Id: rng-tools.init,v 1.6.2.5.2.4 2005/05/11 09:29:26 hmh Exp $
+# $Id: rng-tools.init,v 1.6.2.5.2.4.2.2 2006-02-24 12:53:14 hmh Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/rngd
@@ -23,7 +23,7 @@ test -f ${DAEMON} || exit 0
 set -e
 
 finddevice () {
-	[ -c "${HWRNGDEVICE}" ] && return 0
+	[ -c "${HRNGDEVICE}" ] && return 0
 	for i in ${DEVICELIST} ; do
 		if [ -c "/dev/$i" ] ; then
 			HRNGDEVICE="/dev/$i"

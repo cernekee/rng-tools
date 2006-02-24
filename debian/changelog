@@ -1,3 +1,11 @@
+rng-tools (2-unofficial-mt.10-2) unstable; urgency=low
+
+  * Fix typo in initscript which caused HRNGDEVICE definitions in
+    /etc/default/rng-tools to be ignored, thanks to Dariush Pietrzak
+    <eyck.debian@ghost.anime.pl> for noticing this (closes: #354186)
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Fri, 24 Feb 2006 09:49:44 -0300
+
 rng-tools (2-unofficial-mt.10-1) unstable; urgency=high
 
   * "Last changes for Sarge (I hope)"

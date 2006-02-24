@@ -1,5 +1,5 @@
 # Configuration for the rng-tools initscript
-# $Id: rng-tools.default,v 1.1.2.1.2.2 2005/05/11 09:44:51 hmh Exp $
+# $Id: rng-tools.default,v 1.1.2.1.2.2.2.1 2006-02-24 12:52:37 hmh Exp $
 
 # This is a POSIX shell fragment
 
