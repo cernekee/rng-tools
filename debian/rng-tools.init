@@ -4,7 +4,16 @@
 #		Copr. 2003 by Henrique de Moraes Holschuh <hmh@debian.org>
 #		Copr. 2002 by Viral Shah <viral@debian.org>
 #
-# $Id: rng-tools.init,v 1.6.2.5.2.4.2.2 2006-02-24 12:53:14 hmh Exp $
+### BEGIN INIT INFO
+# Provides:		rng-tools
+# Required-Start:	$remote_fs $syslog
+# Required-Stop:	$remote_fs $syslog
+# Default-Start:	2 3 4 5
+# Default-Stop:		0 1 6
+### END INIT INFO
+#
+#
+# $Id: rng-tools.init,v 1.6.2.5.2.4.2.3 2008-02-21 21:40:42 hmh Exp $
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/rngd

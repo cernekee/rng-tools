@@ -1,3 +1,14 @@
+rng-tools (2-unofficial-mt.10-3) unstable; urgency=low
+
+  * Add LSB initscript header information, thanks to Petter Reinholdtsen
+    <pere@hungry.com> for the patch (closes: #466917)
+  * Fix --trng instead of --hrng in manpage and defaults file
+    (closes: #388748)
+  * Remove debian/watch file.  Since I am upstream for this heavily
+    modified version, the file is useless anyway (closes: #450224)
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Thu, 21 Feb 2008 18:46:30 -0300
+
 rng-tools (2-unofficial-mt.10-2) unstable; urgency=low
 
   * Fix typo in initscript which caused HRNGDEVICE definitions in

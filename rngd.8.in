@@ -14,7 +14,7 @@ rngd \- Check and feed random data from hardware device to kernel entropy pool
 [\fB\-s\fR \fIn\fR | \fB\-\-random-step=\fIn\fR]
 [\fB\-W\fR \fIn\fR | \fB\-\-fill-watermark=\fIn[%]\fR]
 [\fB\-t\fR \fIn\fR | \fB\-\-feed-interval=\fIn\fR]
-[\fB\-\-trng=\fIname\fR]
+[\fB\-\-hrng=\fIname\fR]
 [\fB\-H\fR \fIn.nnn\fR | \fB\-\-rng\-entropy=\fIn.nnn\fR]
 [\fB\-B\fR \fIn\fR | \fB\-\-rng\-buffers=\fIn\fR]
 [\fB\-T\fR \fIn\fR | \fB\-\-rng-timeout=\fIn\fR]
@@ -79,7 +79,7 @@ Kernel device used for entropy output
 \fB\-r\fI file\fR, \fB\-\-rng\-device=\fIfile\fR (default: @DEVHWRANDOM@)
 Kernel device used for entropy input
 .TP
-\fB\-\-trng=\fIname\fR
+\fB\-\-hrng=\fIname\fR
 Selects known-good defaults for some HRNGs.  \fIhelp\fR lists all
 known HRNGs.  You can override these defaults selectively with the
 other options.
