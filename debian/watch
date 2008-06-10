@@ -1,3 +1,0 @@
-version=2
-http://prdownloads.sourceforge.net/gkernel/ (?:.*/)?rng-tools-(.*)\.tar\.(gz|bz2) debian false
-ftp://ftp2.sf.net/pub/sourceforge/g/gk/gkernel/rng-tools-(.*)\.tar\.(gz|bz2) debian
