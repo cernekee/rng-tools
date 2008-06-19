@@ -1,8 +1,26 @@
-rng-tools (2-unofficial-mt.11-2) unstable; urgency=low
+rng-tools (2-unofficial-mt.12-1) unstable; urgency=low
 
+  * New upstream source:
+    + Some README/NEWS cleanup
+    + No code changes
+  * Upload to unstable (closes: #486688)
+  * Remove debian/README.Debian, new upstream README has most of the text
+    that was there
   * Sync with Debian sid branch 2-unofficial-mt.10-3
+  * Packaging cleanup:
+    + Remove old debian/rng-tools.modules file, deprecated since forever...
+    + Bump standards-version to 3.8.0.0, no changes needed
+    + Fix lintian warning: debian-rules-ignores-make-clean-error using the
+      suggested -f Makefile test
+    + Switch to debhelper V7 mode
+    + Use standard debhelper initscripts, lets us get rid of our custom
+      postrm and prerm.  Ignore failures to start/stop rng-tools in the
+      maintainer scripts, however, otherwise we become a pest if /dev/hwrng
+      is missing
+    + linda is gone, drop override handling for it in debian/rules
+    + install upstream README
 
- -- Henrique de Moraes Holschuh <hmh@debian.org>  Tue, 10 Jun 2008 16:50:17 -0300
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Thu, 19 Jun 2008 12:54:05 -0300
 
 rng-tools (2-unofficial-mt.10-3) unstable; urgency=low
 

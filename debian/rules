@@ -5,7 +5,7 @@
 # Published under the GNU GPL license
 # Based on previous work by Viral Shah <viral@debian.org>.
 #
-# $Id: rules,v 1.3.2.11 2008-06-10 19:51:37 hmh Exp $
+# $Id: rules,v 1.3.2.15 2008-06-19 03:02:21 hmh Exp $
 
 PACKAGE:=rng-tools
 PKGDIR:=$(CURDIR)/debian/$(PACKAGE)
@@ -77,8 +77,8 @@ clean:	configure
 	ln -s /usr/share/misc/config.sub config.sub
 	ln -s /usr/share/misc/config.guess config.guess
 
-	-$(MAKE) clean
-	-$(MAKE) distclean
+	[ ! -f Makefile ] || $(MAKE) clean
+	[ ! -f Makefile ] || $(MAKE) distclean
 
 	rm -f config.sub config.guess
 	rm -rf config.log config.cache
@@ -106,14 +106,8 @@ install: build
 	install -m 644 debian/$(PACKAGE).modprobe \
 	  $(PKGDIR)/etc/modprobe.d/$(PACKAGE)
 
-	# Install lintian and linda overrides, if any
+	# Install lintian overrides, if any
 	cd debian ; \
-	for i in *.linda ; do \
-	    [ -r "$$i" ] && { \
-		mkdir -p "$${i%%.linda}/usr/share/linda/overrides" ;\
-		install  -m 644 "$$i" "$${i%%.linda}/usr/share/linda/overrides/$${i%%.linda}" ;\
-	    } ;\
-	done ;\
 	for i in *.lintian ; do \
 	    [ -r "$$i" ] && { \
 		mkdir -p "$${i%%.lintian}/usr/share/lintian/overrides" ;\
@@ -130,7 +124,7 @@ binary-arch: build install
 	dh_testdir
 	dh_testroot
 #	dh_installdebconf	
-	dh_installdocs
+	dh_installdocs README
 #	dh_installexamples
 #	dh_installmenu
 #	dh_installlogrotate
@@ -138,7 +132,7 @@ binary-arch: build install
 #	dh_installpam
 #	dh_installmime
 	dh_installmodules
-	dh_installinit --noscripts
+	dh_installinit --error-handler=true
 #	dh_installcron
 	dh_installman
 #	dh_installinfo
