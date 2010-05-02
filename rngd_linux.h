@@ -30,10 +30,8 @@
 /*
  * Initialize the interface to the Linux Kernel
  * entropy pool (through /dev/random)
- *
- * randomdev is the path to the random device
  */
-extern void init_kernel_rng(const char* randomdev);
+extern void init_kernel_rng( void );
 
 /*
  * RNG data sink thread

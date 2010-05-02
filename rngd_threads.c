@@ -1,14 +1,5 @@
 /*
  * rngd_threads.c -- Common thread code
- *
- * rngd reads data from a hardware random number generator, verifies it
- * looks like random data, and adds it to /dev/random's entropy store.
- * 
- * In theory, this should allow you to read very quickly from
- * /dev/random; rngd also adds bytes to the entropy store periodically
- * when it's full, which makes predicting the entropy store's contents
- * harder.
- *
  * Copyright (C) 2004 Henrique de Moraes Holschuh <hmh@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -54,7 +45,7 @@ int rng_buffers;                 /* number of active buffers */
 rng_buffer_t *rng_buf[MAX_RNG_BUFFERS];
 
 /*
- * FIFOs to pass blocks among the threads, avoiding spinlocks
+ * FIFOs to pass blocks among the threads
  */
 struct buffer_queues buffer_queues;
 

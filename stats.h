@@ -52,18 +52,18 @@ extern void update_stat(struct rng_stat *stat, uint64_t value);
  */
 	
 /* Dump simple counter */
-extern char *dump_stat_counter(char *buf, int size, 
+extern char *dump_stat_counter(char *buf, size_t size, 
 			      const char *msg, uint64_t value);
 
 /* Dump min-max time stat */
-extern char *dump_stat_stat(char *buf, int size,
+extern char *dump_stat_stat(char *buf, size_t size,
 			   const char *msg, const char *unit,
 			   struct rng_stat *stat);
 
 /*
  * Dump min-max speed stat, base time unit is a microsecond
  */
-extern char *dump_stat_bw(char *buf, int size,
+extern char *dump_stat_bw(char *buf, size_t size,
 			 const char *msg, const char *unit,
 			 struct rng_stat *stat,
 			 uint64_t blocksize);
