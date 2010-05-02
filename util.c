@@ -32,11 +32,15 @@
 #include <time.h>
 #include <sys/time.h>
 
+#include <assert.h>
+
 /* Computes elapsed time in microseconds */
 uint64_t elapsed_time(struct timeval *start,
 		       struct timeval *stop)
 {
 	int64_t diff;
+
+	assert(start != NULL && stop != NULL);
 
 	diff = (stop->tv_sec - start->tv_sec) * 1000000ULL
 		+ stop->tv_usec - start->tv_usec;

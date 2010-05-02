@@ -35,7 +35,7 @@
 extern int rng_buffers;                 /* number of active buffers */
 
 typedef unsigned char rng_buffer_t[FIPS_RNG_BUFFER_SIZE];
-extern rng_buffer_t *rng_buf[MAX_RNG_BUFFERS];
+extern rng_buffer_t **rng_buf;
 
 /* Initialize "n" RNG data buffers, and the FIFOs */
 extern void init_rng_buffers(int n);
@@ -45,7 +45,7 @@ extern void init_rng_buffers(int n);
  */
 struct buf_fifo {
 	pthread_mutex_t mutex;
-	volatile int data[MAX_RNG_BUFFERS+1];
+	volatile int *data;
 	volatile int head;
 	volatile int tail;
 };
@@ -61,10 +61,6 @@ extern struct buffer_queues buffer_queues;
 /*
  * FIFO Control
  */
-#define BUFFIFO_INIT(fifo) do { \
-	pthread_mutex_init(&buffer_queues.fifo.mutex, NULL); \
-	buffer_queues.fifo.head = buffer_queues.fifo.tail = 0; \
-} while (0)
 #define GETBUFFIFO_SIZE (rng_buffers+1)
 #define BUFFIFO_READ(fifo, var) do { \
 	pthread_mutex_lock(&buffer_queues.fifo.mutex); \

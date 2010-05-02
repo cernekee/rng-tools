@@ -38,6 +38,8 @@
 #include <time.h>
 #include <string.h>
 
+#include <assert.h>
+
 #include "fips.h"
 #include "stats.h"
 
@@ -46,8 +48,10 @@ static char stat_prefix[20] = "";
 
 void set_stat_prefix(const char* prefix)
 {
-	stat_prefix[sizeof(stat_prefix)-1] = 0;
-	strncpy(stat_prefix, prefix, sizeof(stat_prefix)-1);
+	if (prefix) {
+		strncpy(stat_prefix, prefix, sizeof(stat_prefix)-1);
+		stat_prefix[sizeof(stat_prefix)-1] = 0;
+	} else stat_prefix[0] = 0;
 }
 
 static void scale_mult_unit(char *unit, size_t unitsize, 
@@ -59,6 +63,9 @@ static void scale_mult_unit(char *unit, size_t unitsize,
 	unsigned int mult = 0;
 	char multchar[] = "KMGTPE";
 
+/*	assert(unit != NULL && baseunit != NULL && 
+		value_min != NULL && value_avg != NULL && value_max != NULL); */
+
 	while ((*value_min >= 1024.0) && (*value_avg >= 1024.0) && 
 	       (*value_max >= 1024.0) && (mult < sizeof(multchar))) {
 		mult++;
@@ -66,17 +73,19 @@ static void scale_mult_unit(char *unit, size_t unitsize,
 		*value_max = *value_max / 1024.0;
 		*value_avg = *value_avg / 1024.0;
 	}
-	unit[unitsize-1] = 0;
 	if (mult)
 		snprintf(unit, unitsize, "%ci%s", multchar[mult-1], baseunit);
 	else
 		strncpy(unit, baseunit, unitsize);
+	unit[unitsize-1] = 0;
 }
 
 /* Updates min-max stat */
 void update_stat(struct rng_stat *stat, uint64_t value)
 {
 	uint64_t overflow = stat->num_samples;
+
+	assert(stat != NULL);
 
 	if ((stat->min == 0 ) || (value < stat->min)) stat->min = value;
 	if (value > stat->max) stat->max = value;
@@ -91,8 +100,10 @@ void update_stat(struct rng_stat *stat, uint64_t value)
 char *dump_stat_counter(char *buf, size_t size,
 		       const char *msg, uint64_t value)
 {
-	buf[size-1] = 0;
+	assert(buf != NULL && msg != NULL);
+
 	snprintf(buf, size-1, "%s%s: %" PRIu64 , stat_prefix, msg, value);
+	buf[size-1] = 0;
 
 	return buf;
 }
@@ -101,6 +112,8 @@ char *dump_stat_stat(char *buf, size_t size,
 		    const char *msg, const char *unit, struct rng_stat *stat)
 {
 	double avg = 0.0;
+
+	assert(stat != NULL && msg != NULL && unit != NULL && buf != NULL);
 
 	if (stat->num_samples > 0)
 		avg = (double)stat->sum / stat->num_samples;
@@ -120,6 +133,8 @@ char *dump_stat_bw(char *buf, size_t size,
 {
 	char unitscaled[20];
 	double bw_avg = 0.0, bw_min = 0.0, bw_max = 0.0;
+
+	assert(stat != NULL && msg != NULL && unit != NULL);
 
 	if (stat->max > 0)
 		bw_min = (1000000.0 * blocksize) / stat->max;

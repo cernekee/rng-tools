@@ -33,24 +33,33 @@
 #include <pthread.h>
 #include <sys/mman.h>
 
+#include <assert.h>
+
 #include "rngd.h"
 #include "fips.h"
 #include "stats.h"
 #include "exits.h"
 #include "rngd_threads.h"
 
+
 /* Buffers for RNG data */
-int rng_buffers;                 /* number of active buffers */
-rng_buffer_t *rng_buf[MAX_RNG_BUFFERS];
+int rng_buffers = 0;		/* number of active buffers */
+rng_buffer_t **rng_buf = NULL;	/* vector of pointers to the buffers */	
 
 /*
  * FIFOs to pass blocks among the threads
  */
 struct buffer_queues buffer_queues;
 
+
+/*
+ * Get the amount of data in a FIFO
+ */
 int getbuffifo_count(struct buf_fifo *fifo)
 {
 	int count;
+
+	assert(fifo != NULL);
 
 	pthread_mutex_lock(&(fifo->mutex));
 	count = (fifo->head >= fifo->tail) ?
@@ -61,12 +70,31 @@ int getbuffifo_count(struct buf_fifo *fifo)
 }
 
 
+/* handy malloc()/calloc() error handler */
+void *test_malloc(void *p) {
+	if (!p) {
+		message(LOG_ERR, "cannot allocate buffers");
+		die(EXIT_OSERR);
+	}
+	return p;
+}
+
 /*
  *  Init the RNG buffer structures
  */
+
+#define BUFFIFO_INIT(fifo) do { \
+	pthread_mutex_init(&buffer_queues.fifo.mutex, NULL); \
+	buffer_queues.fifo.head = buffer_queues.fifo.tail = 0; \
+	buffer_queues.fifo.data = test_malloc(calloc(rng_buffers, \
+		sizeof(*buffer_queues.fifo.data))); \
+} while (0)
+
 void init_rng_buffers(int n)
 {
 	int i;
+
+	assert(n <= MAX_RNG_BUFFERS);
 
 	rng_buffers = n;
 
@@ -75,14 +103,12 @@ void init_rng_buffers(int n)
 	BUFFIFO_INIT(accepted);
 	BUFFIFO_INIT(rejected);
 
+	rng_buf = test_malloc(calloc(rng_buffers, sizeof(*rng_buf)));
+
 	for (i = 0; i < rng_buffers; i++) {
 		BUFFIFO_WRITE(empty, i);
 
-		rng_buf[i] = malloc(FIPS_RNG_BUFFER_SIZE);
-		if (!rng_buf[i]) {
-			message(LOG_ERR, "cannot allocate buffers");
-			die(EXIT_OSERR);
-		}
+		rng_buf[i] = test_malloc(malloc(FIPS_RNG_BUFFER_SIZE));
 		if (mlock(rng_buf[i], FIPS_RNG_BUFFER_SIZE)) {
 			message_strerr(LOG_ERR, errno, "cannot lock buffers");
                         die(EXIT_OSERR);

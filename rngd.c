@@ -51,6 +51,9 @@
 #include <syslog.h>
 #include <pthread.h>
 
+#include <sys/file.h>
+#include <assert.h>
+
 #include "rngd.h"
 #include "fips.h"
 #include "exits.h"
@@ -60,8 +63,7 @@
 #include "rngd_entsource.h"
 #include "rngd_linux.h"
 
-#include <sys/file.h>
-
+#define XSTR(x) STR(x)
 #define STR(x) #x
 #define PROGNAME "rngd"
 
@@ -85,7 +87,7 @@ static int daemon_lockfd;		/* Lockfile file descriptor */
 const char *argp_program_version = 
 	PROGNAME " " VERSION "\n"
 	"Copyright (c) 2001-2004 by Jeff Garzik\n"
-	"Copyright (c) 2004 by Henriqe de Moraes Holschuh\n"
+	"Copyright (c) 2004 by Henrique de Moraes Holschuh\n"
 	"Copyright (c) 2001 by Philipp Rumpf\n"
 	"This is free software; see the source for copying conditions.  There is NO "
 	"warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
@@ -99,42 +101,55 @@ static char doc[] =
 #define ARGP_RNGD_CMDLINE_TIMEOUT	0x82
 	
 static struct argp_option options[] = {
+    	/**/ { 0, 0, 0, 0, "Program control" }, /* ======================== */
 	{ "foreground",	'f', 0, 0, "Do not fork and become a daemon" },
 
 	{ "background", 'b', 0, 0, "Become a daemon (default)" },
 
-	{ "random-device", 'o', "file", 0,
-	  "Kernel device used for entropy output (default: " DEVRANDOM ")" },
+	{ "pidfile", 'p', "file", 0,
+	  "Path to file to write PID to in daemon mode "
+	  "(default: " PIDFILE ")" },
+
+	{ "rng-buffers", 'B', "n", 0,
+	  "Number of buffers (default: 3),  0 < n <= " XSTR(MAX_RNG_BUFFERS) },
+
+	/**/ { 0, 0, 0, 0, "Input (entropy source) control" }, /* ========= */
 
 	{ "rng-device", 'r', "file", 0,
 	  "Entropy source (default: " DEVHWRANDOM ")" },
 
-	{ "random-step", 's', "n", 0,
-	  "Number of bytes written to random-device at a time (default: 64), 8 <= n <= " STR(FIPS_RNG_BUFFER_SIZE) ", n must be even" },
-
-	{ "timeout", ARGP_RNGD_CMDLINE_TIMEOUT, "n", 0,
-	  "Deprecated, same as --feed-interval" },
-	
-	{ "feed-interval", 't', "n", 0,
-	  "When the entropy pool is full, write to random-device every n seconds.  Set to zero to disable (default: 60)" },
-
-	{ "fill-watermark", 'W', "n[%]", 0,
-	  "Do not stop feeding entropy to random-device until at least n bits of entropy are available in the pool. n can be the absolute number of bits, or a percentage of the pool size (default: 50%), 0 <= n <= kernel random pool size, or 0% <= n <= 100%" },
-
 	{ "rng-timeout", 'T', "n", 0,
-	  "Wait at most n seconds for the random data source to provide some initial data.  Set to zero to wait forever (default: 10)" },
-
-	{ "pidfile", 'p', "file", 0,
-	  "Path to file to write PID to in daemon mode (default: " PIDFILE ")" },
+	  "Wait at most n seconds for the random data source to provide some "
+	  "initial data.  Set to zero to wait forever (default: 10)" },
 
 	{ "rng-entropy", 'H', "n", 0,
 	  "Entropy per bit of the hardware RNG (default: 1.0), 0 < n <= 1.0" },
 
-	{ "rng-buffers", 'B', "n", 0,
-	  "Number of buffers (default: 3),  0 < n <= " STR(MAX_RNG_BUFFERS) },
-
 	{ "trng", ARGP_RNGD_CMDLINE_TRNG, "name", 0,
-	  "Load known-good defaults for a given TRNG.  Use --trng=help to get a list of known TRNGs" },
+	  "Load known-good defaults for a given TRNG.  Use --trng=help to "
+	  "get a list of known TRNGs" },
+
+	/**/ { 0, 0, 0, 0, "Output (entropy sink) control" }, /* ========== */
+	
+	{ "random-device", 'o', "file", 0,
+	  "Kernel device used for entropy output (default: " DEVRANDOM ")" },
+
+	{ "random-step", 's', "n", 0,
+	  "Number of bytes written to random-device at a time (default: 64), "
+	  "8 <= n <= " XSTR(FIPS_RNG_BUFFER_SIZE) ", n must be even" },
+
+	{ "timeout", ARGP_RNGD_CMDLINE_TIMEOUT, "n", 0,
+	  "Deprecated, same as --feed-interval" },
+
+	{ "feed-interval", 't', "n", 0,
+	  "When the entropy pool is full, write to random-device every n "
+	  "seconds.  Set to zero to disable (default: 60)" },
+
+	{ "fill-watermark", 'W', "n[%]", 0,
+	  "Do not stop feeding entropy to random-device until at least n "
+	  "bits of entropy are available in the pool. n can be the absolute "
+	  "number of bits, or a percentage of the pool size (default: 50%), "
+	  "0 <= n <= kernel random pool size, or 0% <= n <= 100%" },
 
 	{ 0 },
 };
@@ -427,6 +442,8 @@ static void get_lock(const char* pidfile_name)
 {
 	int otherpid = 0;
 	int r;
+
+	assert(pidfile_name != NULL);
 
 	if (!daemon_lockfp) {
 		if (((daemon_lockfd = open(pidfile_name, O_RDWR|O_CREAT, 0644)) == -1)
