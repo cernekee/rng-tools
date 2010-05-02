@@ -100,7 +100,4 @@ extern pthread_mutex_t	rng_buffer_raw_mutex;
 extern pthread_cond_t	rng_buffer_ready;
 extern pthread_mutex_t	rng_buffer_ready_mutex;
 
-/* Init signal handlers from within thread context */
-extern void thread_init_sighandlers(void);
-
 #endif /* RNGD_THREADS__H */

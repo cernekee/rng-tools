@@ -73,18 +73,6 @@ static void scale_mult_unit(char *unit, size_t unitsize,
 		strncpy(unit, baseunit, unitsize);
 }
 
-/* Computes elapsed time in microseconds */
-uint64_t elapsed_time(struct timeval *start,
-		       struct timeval *stop)
-{
-	int64_t diff;
-
-	diff = (stop->tv_sec - start->tv_sec) * 1000000ULL
-		+ stop->tv_usec - start->tv_usec;
-
-	return llabs(diff);
-}
-
 /* Updates min-max stat */
 void update_stat(struct rng_stat *stat, uint64_t value)
 {

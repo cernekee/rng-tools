@@ -59,7 +59,7 @@ AR = ar
 ARFLAGS = cru
 librngd_a_AR = $(AR) $(ARFLAGS)
 librngd_a_LIBADD =
-am_librngd_a_OBJECTS = fips.$(OBJEXT) stats.$(OBJEXT)
+am_librngd_a_OBJECTS = fips.$(OBJEXT) stats.$(OBJEXT) util.$(OBJEXT)
 librngd_a_OBJECTS = $(am_librngd_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" \
 	"$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man8dir)"
@@ -68,8 +68,8 @@ sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS) $(sbin_PROGRAMS)
 am__objects_1 =
 am_rngd_OBJECTS = $(am__objects_1) rngd.$(OBJEXT) \
-	rngd_threads.$(OBJEXT) rngd_entsource.$(OBJEXT) \
-	rngd_linux.$(OBJEXT)
+	rngd_threads.$(OBJEXT) rngd_signals.$(OBJEXT) \
+	rngd_entsource.$(OBJEXT) rngd_linux.$(OBJEXT)
 rngd_OBJECTS = $(am_rngd_OBJECTS)
 rngd_DEPENDENCIES = librngd.a
 am_rngtest_OBJECTS = $(am__objects_1) rngtest.$(OBJEXT)
@@ -191,16 +191,19 @@ target_alias = @target_alias@
 SUBDIRS = contrib
 man_MANS = rngd.8 rngtest.1
 noinst_LIBRARIES = librngd.a
-common_sources = exits.h fips.h stats.h
+common_sources = exits.h fips.h stats.h util.h
 rngd_SOURCES = $(common_sources) rngd.h rngd.c \
 		  rngd_threads.h rngd_threads.c \
+		  rngd_signals.h rngd_signals.c \
 		  rngd_entsource.h rngd_entsource.c \
 		  rngd_linux.h rngd_linux.c
 
 rngd_LDADD = librngd.a @LIB_PTHREAD@
 rngtest_SOURCES = $(common_sources) rngtest.c
 rngtest_LDADD = librngd.a
-librngd_a_SOURCES = fips.h fips.c stats.h stats.c
+librngd_a_SOURCES = fips.h fips.c stats.h stats.c \
+		    util.h util.c
+
 EXTRA_DIST = autogen.sh
 all: rng-tools-config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
@@ -331,9 +334,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rngd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rngd_entsource.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rngd_linux.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rngd_signals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rngd_threads.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rngtest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stats.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \

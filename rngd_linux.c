@@ -37,7 +37,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/select.h>
+#include <sys/poll.h>
 #include <sys/time.h>
 #include <time.h>
 #include <linux/types.h>
@@ -50,7 +50,9 @@
 #include "fips.h"
 #include "stats.h"
 #include "exits.h"
+#include "util.h"
 #include "rngd_threads.h"
+#include "rngd_signals.h"
 #include "rngd_linux.h"
 
 /* Kernel output device */
@@ -87,9 +89,8 @@ static int get_rng_proc_parameter(const char* param, long int *value)
 	if (fp != NULL) error |= fclose(fp);
 	
 	if (error) {
-		message(LOG_WARNING,
-			"Cannot read %s: %s",
-			procname, strerror(errno));
+		message_strerr(LOG_WARNING, error,
+			"Cannot read %s", procname);
 		return -1;
 	}
 	return 0;
@@ -121,9 +122,9 @@ static int set_rng_proc_parameter(const char* param, long int *value)
 	if (fp != NULL) error |= fclose(fp);
 	
 	if (error) {
-		message(LOG_WARNING,
-			"Cannot set %s to a minimum of %ld: %s",
-			procname, *value, strerror(errno));
+		message_strerr(LOG_WARNING, errno,
+			"Cannot set %s to a minimum of %ld",
+			procname, *value);
 		return -1;
 	}
 	return 0;
@@ -138,8 +139,8 @@ void init_kernel_rng( void )
 {
 	random_fd = open(arguments->random_name, O_RDWR);
 	if (random_fd == -1) {
-		message(LOG_ERR, "can't open %s: %s",
-			arguments->random_name, strerror(errno));
+		message_strerr(LOG_ERR, errno, "can't open %s",
+			arguments->random_name);
 		die(EXIT_USAGE);
 	}
 
@@ -181,17 +182,13 @@ static void random_add_entropy(void *buf, size_t size)
 		int size;
 		unsigned char data[size];
 	} entropy;
-	char errbuf[STR_BUF_LEN];
 
 	entropy.ent_count = (int)(arguments->rng_entropy * size * 8);
 	entropy.size = size;
 	memcpy(entropy.data, buf, size);
 	
 	if (ioctl(random_fd, RNDADDENTROPY, &entropy) != 0) {
-		strerror_r(errno, errbuf, sizeof(errbuf));
-		errbuf[sizeof(errbuf)-1]=0;
-		message(LOG_ERR, "RNDADDENTROPY failed: %s",
-			errbuf);
+		message_strerr(LOG_ERR, errno, "RNDADDENTROPY failed");
 		exitstatus = EXIT_OSERR;
 		kill(masterprocess, SIGTERM);
 		pthread_exit(NULL);
@@ -211,25 +208,33 @@ static void random_add_entropy(void *buf, size_t size)
 static void random_sleep( void )
 {
 	int ent_count;
-	fd_set sfd;
-	struct timeval tv = {
-		tv_usec: 0,
-		tv_sec: random_device_timeout,
+	struct pollfd pfd = {
+		fd:	random_fd,
+		events: POLLOUT,
 	};
+	struct timeval start, now;
+	int64_t timeout_usec;
 
 	if (ioctl(random_fd, RNDGETENTCNT, &ent_count) == 0 &&
 	    ent_count < random_pool_fill_watermark)
 		return;
 
-	FD_ZERO(&sfd);
-	FD_SET(random_fd, &sfd);
-	/* this is non portable, but easier than anything else
-	 * I can come up with */
-	while (!gotsigterm && 
-		select(random_fd + 1, NULL, &sfd, NULL, 
-			(random_device_timeout != 0) ? &tv : NULL) < 0) {
-		if (errno != EINTR) break;
+	if (random_device_timeout > 0) {
+		timeout_usec = random_device_timeout * 1000;
+		gettimeofday(&start, NULL);
+		while (!gotsigterm && timeout_usec > 0 &&
+				poll(&pfd, 1, timeout_usec) < 0 &&
+				errno != EINTR) {
+			gettimeofday(&now, NULL);
+			timeout_usec -= elapsed_time(&start, &now);
+			start = now;
+		}
+	} else {
+		while (!gotsigterm && poll(&pfd, 1, -1) < 0) {
+			if (errno != EINTR) break;
+		}
 	}
+				
 }
 
 void *do_rng_data_sink_loop( void *trash )
@@ -239,8 +244,6 @@ void *do_rng_data_sink_loop( void *trash )
 	int nready;
 	unsigned char *p;
 	struct timeval start, stop;
-
-	thread_init_sighandlers();
 
 	/*  Startup: Wait until we get some data to work on */
 	while (ISBUFFIFO_EMPTY(accepted)) {

@@ -46,6 +46,7 @@
 #include "fips.h"
 #include "stats.h"
 #include "exits.h"
+#include "util.h"
 
 #define PROGNAME "rngtest"
 const char* logprefix = PROGNAME ": ";
