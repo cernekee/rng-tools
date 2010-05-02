@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/select.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
@@ -53,8 +54,11 @@
 /* Logic and contexts */
 static volatile int throttling = 0;	/* Throttling level, 0 = normal */
 static volatile int pausesource = 0;	/* Pause reading from entropy source */
-static int rng_fd;			/* rng data source */
 static fips_ctx_t fipsctx;		/* Context for the FIPS tests */
+
+/* Data source */
+static int rng_fd;			/* rng data source */
+static int rng_source_timeout = 10;	/* rng data source timeout (s) */
 
 /* RNG data source thread waits on this condition */
 pthread_cond_t	rng_buffer_empty = PTHREAD_COND_INITIALIZER;
@@ -109,8 +113,28 @@ static unsigned int discard_initial_data(void)
 	 * be enough, but since AMD's generates 32 bits at a time...
 	 * 
 	 * The kernel drivers should be doing this at device powerup,
-	 * but at least up to 2.4.24, it doesn't. */
+	 * but at least up to 2.4.24, it doesn't. 
+	 *
+	 * We also take the opportunity to detect a disabled/non-working
+	 * data source by using a timeout 
+	 */
 	unsigned char tempbuf[4];
+	fd_set sfd;
+	struct timeval tv = {
+		tv_usec: 0,
+		tv_sec: rng_source_timeout,
+	};
+
+	/* Detect timeout just on the first read() in a lazy way */
+	if (rng_source_timeout > 0) {
+		FD_ZERO(&sfd);
+		FD_SET(rng_fd, &sfd);
+		if (select(rng_fd + 1, &sfd, NULL, NULL, &tv) == 0) {
+			message(LOG_ERR, "entropy source timed out");
+			die(EXIT_FAIL);
+		}
+	}
+
 	if (xread(tempbuf, sizeof tempbuf)) die(EXIT_FAIL);
 
 	/* Return 32 bits of bootstrap data */
@@ -131,6 +155,8 @@ void init_entropy_source( void )
 			arguments->rng_name, strerror(errno));
 		die(EXIT_FAIL);
 	}
+
+	rng_source_timeout = arguments->rng_timeout;
 
 	/* Bootstrap FIPS tests */
 	fips_init(&fipsctx, discard_initial_data());
