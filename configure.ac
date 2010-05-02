@@ -17,8 +17,8 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-AC_INIT(rng-tools, 1.1, [Jeff Garzik <jgarzik@pobox.com>])
-AC_PREREQ(2.52)
+AC_INIT(rng-tools, 1.1-unofficial-mt.1, [rng-tools@packages.debian.org])
+AC_PREREQ(2.57)
 AC_CONFIG_SRCDIR([rngd.c])
 AM_INIT_AUTOMAKE([gnu])
 AC_CONFIG_HEADERS([rng-tools-config.h])
@@ -28,6 +28,7 @@ AM_MAINTAINER_MODE
 
 dnl Checks for programs
 AC_PROG_CC
+AC_PROG_RANLIB
 AC_PROG_GCC_TRADITIONAL
 
 dnl Checks for header files.
@@ -41,14 +42,44 @@ dnl AC_TYPE_PID_T
 dnl -----------------------------
 dnl Checks for required libraries
 dnl -----------------------------
+AC_CHECK_LIB(pthread, pthread_create,
+	     [LIB_PTHREAD="-lpthread"], 
+	     [AC_MSG_ERROR([Can't compile without pthreads])])
+AC_SUBST(LIB_PTHREAD)
 
 dnl -------------------------------------
 dnl Checks for optional library functions
 dnl -------------------------------------
+AC_CHECK_FUNCS(flock)
 
 dnl -----------------
 dnl Configure options
 dnl -----------------
+
+SYSLOG_FACILITY=LOG_DAEMON
+AC_ARG_WITH(syslogfacility, [  --with-syslogfacility=FACILITY (default DAEMON)],
+	[ if test "$withval" != "yes" -a "$withval" != "no" ; then
+		SYSLOG_FACILITY=LOG_$withval
+	  fi; ])
+AC_DEFINE_UNQUOTED(SYSLOG_FACILITY, $SYSLOG_FACILITY, [Syslog facility to use.])
+
+AC_ARG_WITH(pidfile,[  --with-pidfile[=PATH]     pidfile in PATH (/var/run/rngd.pid)],
+	[PIDFILE="$withval"],
+	[PIDFILE="/var/run/rngd.pid"])
+AC_DEFINE_UNQUOTED(PIDFILE, "$PIDFILE",[Name of the pidfile for rngd])
+AC_SUBST(PIDFILE)
+
+AC_ARG_WITH(kernelrng,[  --with-kernelrng[=PATH]     Kernel RNG device in PATH (/dev/random)],
+	[DEVRANDOM="$withval"],
+	[DEVRANDOM="/dev/random"])
+AC_DEFINE_UNQUOTED(DEVRANDOM, "$DEVRANDOM",[Name of the kernel RNG device])
+AC_SUBST(DEVRANDOM)
+
+AC_ARG_WITH(hwrng,[  --with-hwrng[=PATH]     Source TRNG device in PATH (/dev/hwrandom)],
+	[DEVHWRANDOM="$withval"],
+	[DEVHWRANDOM="/dev/hwrandom"])
+AC_DEFINE_UNQUOTED(DEVHWRANDOM, "$DEVHWRANDOM",[Name of the source TRNG device])
+AC_SUBST(DEVHWRANDOM)
 
 dnl --------------------------
 dnl autoconf output generation

@@ -1,40 +1,68 @@
 .\" Copyright (C) 2001 Jeff Garzik -- jgarzik@pobox.com
+.\" Copyright (c) 2004 Henrique de Moraes Holschuh -- hmh@debian.org
 .\"
-.TH RNGD 8 "March 2001" "@PACKAGE@ @VERSION@"
+.TH RNGD 8 "March 2004" "@PACKAGE@ @VERSION@"
 
 .SH NAME
-rngd \- Check and feed random data from hardware device to kernel random device
+rngd \- Check and feed random data from hardware device to kernel entropy pool
 
 .SH SYNOPSIS
 .B rngd
-[\fB\-b\fR, \fB\-\-background\fR]
-[\fB\-f\fR, \fB\-\-foreground\fR]
-[\fB\-o\fR, \fB\-\-random-device=\fIfile\fR]
-[\fB\-r\fR, \fB\-\-rng-device=\fIfile\fR]
-[\fB\-s\fR, \fB\-\-random-step=\fInnn\fR]
-[\fB\-t\fR, \fB\-\-timeout=\fInnn\fR]
-[\fB\-?\fR, \fB\-\-help\fR]
-[\fB\-V\fR, \fB\-\-version\fR]
+[\fB\-b\fR | \fB\-\-background\fR | \fB\-f\fR | \fB\-\-foreground\fR]
+[\fB\-o\fR \fIfile\fR | \fB\-\-random-device=\fIfile\fR]
+[\fB\-r\fR \fIfile\fR | \fB\-\-rng-device=\fIfile\fR]
+[\fB\-s\fR \fIn\fR | \fB\-\-random-step=\fIn\fR]
+[\fB\-W\fR \fIn\fR | \fB\-\-fill-watermark=\fIn\fR]
+[\fB\-t\fR \fIn\fR | \fB\-\-timeout=\fIn\fR]
+[\fB\-\-trng=\fIname\fR]
+[\fB\-H\fR \fIn.nnn\fR | \fB\-\-rng\-entropy=\fIn.nnn\fR]
+[\fB\-B\fR \fIn\fR | \fB\-\-rng\-buffers=\fIn\fR]
+[\fB\-p\fR \fIfile\fR | \fB\-\-pidfile=\fIfile\fR]
+[\fB\-?\fR] [\fB\-\-help\fR]
+[\fB\-V\fR] [\fB\-\-version\fR]
 .RI
 
 .SH DESCRIPTION
-This daemon feeds data from a random number generator to the kernel's
-random number entropy pool, after first checking the data to ensure that
-it is properly random.
+This daemon feeds entropy from a true random number generator (TRNG) to the
+kernel's entropy pool, after checking the data to ensure that it is suitably
+random.
+.PP
+Entropy measures the uncertainty (randomness) contained in an unit of
+information.  For the Linux kernel, this unit is a binary bit.  The kernel
+keeps all the entropy it gathers from different sources in an entropy pool,
+from which it drawns uncertainty to generate random numbers.
+.PP
+\fIrngd\fR works on blocks of 20000 bits at a time, using the FIPS 140-2 tests
+to verify the randomness of the block of data.  If it is deemed random, the
+block is fed back \fIrandom-step\fR*8 bits at a time to the kernel, until the
+kernel's entropy pool is full.
+.PP
+When the entropy pool is full, the daemon will force-feed the kernel
+\fIrandom-step\fR*8 bits of data every \fItimeout\fR seconds,
+to stir the entropy pool.  If the TRNG used by \fIrngd\fR is of very high
+quality, this will improve the entropy of the pool.
 .PP
 The \fB\-f\fR or \fB\-\-foreground\fR options can be used to tell
 \fBrngd\fR to avoid forking on startup.  This is typically used for
-debugging.  The \fB\-f\fR or \fB\-\-foreground\fR options, which fork and put
+debugging.  The \fB\-b\fR or \fB\-\-background\fR options, which fork and put
 \fBrngd\fR into the background automatically, are the default.
 .PP
-The \fB\-r\fR or \fB\-\-rng-device\fR options can be used to select an
-alternate source of input, besides the default /dev/hwrandom.
-The \fB\-o\fR or \fB\-\-random-device\fR options can be used to select
-an alternate entropy output device, besides the default /dev/random.
-Note that this device must support the Linux kernel /dev/random 
+The \fB\-r\fR or \fB\-\-rng\-device\fR options can be used to select an
+alternate source of entropy, instead of the default \fI@DEVHWRANDOM@\fR.
+The \fB\-o\fR or \fB\-\-random\-device\fR options can be used to select
+an alternate entropy output device, instead of the default \fI@DEVRANDOM@\fR.  
+Note that this device must support the Linux kernel's \fI/dev/random\fR
 ioctl API.
 .PP
-FIXME: document random-step and timeout
+The \fB\-H\fR or \fB\-\-rng\-entropy\fR options should be used to inform 
+\fIrngd\fR about the entropy per bit of data received from the input source.
+.PP
+The \fB\-B\fR or \fB\-\-rng\-buffers\fR options can be used to change the
+number of buffers used by \fIrngd\fR.  Each buffer holds a block of 20000 bits
+of data, which will be either approved or discarded by the FIPS tests.  
+Decreasing the number of buffers below 3 can degrade rngd's performance.  
+Increasing it above 3 will only help if you have very big bursts of entropy
+usage that a larger number of buffers can accomodate.
 
 .SH OPTIONS
 .TP
@@ -42,21 +70,47 @@ FIXME: document random-step and timeout
 Become a daemon (default)
 .TP
 \fB\-f\fR, \fB\-\-foreground\fR
-Do not fork and become a daemon
+Do not fork, nor detach from the controlling terminal
 .TP
-\fB\-o\fI file\fR, \fB\-\-random-device=\fIfile\fR
-Kernel device used for random number output
-(default: /dev/random)
+\fB\-o\fI file\fR, \fB\-\-random\-device=\fIfile\fR (default: @DEVRANDOM@)
+Kernel device used for entropy output
 .TP
-\fB\-r\fI file\fR, \fB\-\-rng-device=\fIfile\fR
-Kernel device used for random number input
-(default: /dev/hwrandom)
+\fB\-r\fI file\fR, \fB\-\-rng\-device=\fIfile\fR (default: @DEVHWRANDOM@)
+Kernel device used for entropy input
 .TP
-\fB\-s\fI nnn\fR, \fB\-\-random-step=\fInnn\fR
-Number of bytes written to random-device at a time (default: 64)
+\fB\-\-trng=\fIname\fR
+Selects known-good defaults for some TRNGs.  \fIhelp\fR lists all
+known TRNGs.  You can override these defaults selectively with the
+other options.
 .TP
-\fB\-t\fI nnn\fR, \fB\-\-timeout=\fInnn\fR
-Interval written to random-device when the entropy pool is full, in seconds, or 0 to disable (default: 60)
+\fB\-H \fIn.n\fR, \fB\-\-rng\-entropy=\fIn.n\fR (default: 1.0)
+Entropy per bit of input data.  This is a floating point
+number between 0 and 1 (inclusive)
+.TP
+\fB\-B \fIn\fR, \fB\-\-rng\-buffers=\fIn\fR (default: 3)
+Number of 20000 bit buffers to use
+.TP
+\fB\-s\fI n\fR, \fB\-\-random\-step=\fIn\fR (default: 64)
+Number of bytes written to \fIrandom-device\fR at a time.  This
+number should be even, and between 8 and 2500.  Setting it too high will
+cause \fIrngd\fR to dominate the contents of the entropy pool.  Values 
+above 256 are unlikely to increase performance.
+.TP
+\fB\-W\fI n\fR, \fB\-\-fill\-watermark=\fIn\fR (default: 2048)
+Once we start doing it, feed entropy to \fIrandom-device\fR until at least
+\fIfill-watermark\fR bits of entropy are available in its entropy pool.
+Setting this too high will cause \fIrngd\fR to dominate the contents of the
+entropy pool.  Low values will hurt system performance during entropy 
+starves.  Do not set \fIfill-watermark\fR above the size of the
+entropy pool (usually 4096 bits).
+.TP
+\fB\-t\fI n\fR, \fB\-\-timeout=\fIn\fR (default: 60)
+If \fItimeout\fR is not zero, \fIrngd\fR will force-feed entropy to the random
+device even when the entropy pool is full every \fItimeout\fR seconds.  Setting
+this too low may cause \fIrngd\fR to dominate the contents of the entropy pool.
+.TP
+\fB\-p\fI file\fR, \fB\-\-pidfile=\fIfile\fR (default: @PIDFILE@)
+File to write PID to when running in background mode
 .TP
 \fB\-?\fR, \fB\-\-help\fR
 Give a short summary of all program options.
@@ -64,10 +118,92 @@ Give a short summary of all program options.
 \fB\-V\fR, \fB\-\-version\fR
 Print program version
 
+.SH WARNING
+Depending on its settings, \fIrngd\fR can dominate the kernel's entropy pool,
+by feeding it so much data, so often, that other sources of entropy are mostly
+ignored or lost.  Do not to that unless you trust \fIrngd\fR's source of random
+data ultimately.
+.PP
+Also, there is only so much bandwidth available from a TRNG, and it is often
+not much.  Don't drain too much with too low a \fItimeout\fR, or \fIrngd\fR may
+not have enough data on its buffers when the kernel gets low on entropy.
+
+.SH STATISTICS
+\fIrngd\fR will dump some statistics to its output channel hourly, or when
+sent a \fBSIGUSR1\fR signal.  The output channel is either \fIstderr\fR when
+in foreground mode, or \fIsyslog\fR when in background mode.
+.PP
+\fBBits received from TRNG source\fR is the number of bits received by
+\fIrngd\fR from the entropy source.  \fBBits sent to kernel pool\fR is the
+number of bits sent by \fIrngd\fR to the kernel, and \fBEntropy added to kernel
+pool\fR is the number of bits of entropy in that mass of data that was informed
+to the kernel.
+.PP
+\fBFIPS 140-2 successes\fR and \fBFIPS 140-2 failures\fR counts the number of
+20000-bit blocks either accepted or rejected by the FIPS 140-2 tests.  The
+other statistics show a breakdown of the FIPS 140-2 failures by FIPS 
+140-2 test.  See the FIPS 140-2 document for more information.
+.PP
+\fBTRNG source speed\fR measures the speed of the entropy source, for reading
+a 20000-bit block of data.  \fBFIPS tests speed\fR measures the speed of the
+FIPS 140-2 tests for a 20000-bit block of data.
+.PP
+\fBLowest ready-buffers level\fR records the lowest number of ready buffers
+(i.e. that can be fed to the kernel) hit so far.  If it gets to zero, you
+may want to increase \fIrng-buffers\fR.  If it is always above 1, you may
+want to decrease \fIrng-buffers\fR.
+.PP
+\fBEntropy starvations\fR counts the number of times the kernel asked
+\fIrngd\fR for entropy, and \fIrngd\fR had none to give.  \fBTime spent starving
+for entropy\fR records the time spent by \fIrngd\fR waiting for a buffer with
+good entropy to become available, during such an episode.
+
+.SH SIGNALS
+\fIrngd\fR is multithreaded.  If the threading implementation shows up
+as multiple \fIrngd\fR processes, signals should be sent to the process
+listed in the \fIpidfile\fR.
+.PP
+\fBSIGTERM\fR terminates \fIrngd\fR cleanly.
+.PP
+\fBSIGUSR1\fR causes \fIrngd\fR to dump some statistics to its output
+channel immediately.
+
+.SH EXIT STATUS
+.TP
+\fB0\fR if no errors happen.
+.TP
+\fB1\fR if \fIrng-source\fR is misbehaving.
+.TP
+\fB10\fR if there are problems with the parameters, or if
+\fIrngd\fR fails to lock the \fIpidfile\fR, or if \fIrng-device\fR
+cannot be opened..
+.TP
+\fB11\fR if an input/output error happens.
+.TP
+\fB12\fR if an operating system or resource starvation error
+happens..
+
+.SH BUGS
+The /dev/random driver in Linux kernels up to 2.4.25 inclusive (and probably
+later ones too) has broken entropy accounting, and fails to do catrastrophic
+reseeds correctly.  This has been fixed in Linux 2.6.
+
+.SH FILES
+@DEVRANDOM@, @DEVHWRANDOM@, @PIDFILE@,
+/proc/sys/kernel/random/write_wakeup_threshold
+
+.SH SEE ALSO
+random(4), rngtest(1)
+.TP
+FIPS PUB 140-2 Security Requirements for Cryptographic Modules, NIST, 
+http://csrc.nist.gov/cryptval/140-2.htm
+
 .SH AUTHORS
 Philipp Rumpf
 .br
-Jeff Garzik \- jgarzik@pobox.com
+Jeff Garzik <jgarzik@pobox.com>
 .br
 Matt Sottek
+.br
+Henrique de Moraes Holschuh <hmh@debian.org>
 

@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
 #include <string.h>
@@ -72,18 +73,12 @@ static void scale_mult_unit(char *unit, int unitsize,
 uint64_t elapsed_time(struct timeval *start,
 		       struct timeval *stop)
 {
-	uint64_t diff;
+	int64_t diff;
 
-	if (stop->tv_sec < start->tv_sec) return 0;
+	diff = (stop->tv_sec - start->tv_sec) * 1000000ULL
+		+ stop->tv_usec - start->tv_usec;
 
-	diff = (stop->tv_sec - start->tv_sec) * 1000000ULL;
-	if (stop->tv_usec > start->tv_usec) {
-		diff += stop->tv_usec - start->tv_usec;
-	} else {
-		diff -= start->tv_usec - stop->tv_usec;
-	}
-
-	return diff;
+	return llabs(diff);
 }
 
 /* Updates min-max stat */
