@@ -1,53 +1,62 @@
 .\" Copyright (C) 2001 Jeff Garzik -- jgarzik@pobox.com
-.\" Copyright (c) 2004 Henrique de Moraes Holschuh -- hmh@debian.org
+.\" Copyright (c) 2004,2005 Henrique de Moraes Holschuh -- hmh@debian.org
 .\"
-.TH RNGD 8 "March 2004" "@PACKAGE@ @VERSION@"
+.TH RNGD 8 "February 2005" "@PACKAGE@ @VERSION@"
 
 .SH NAME
-rngd \- Check and feed random data from hardware device to kernel entropy pool
+rngd \- Check and feed random data from an entropy source (e.g. hardware RNG 
+device) to an entropy sink (e.g. kernel entropy pool)
 
 .SH SYNOPSIS
 .B rngd
 [\fB\-b\fR | \fB\-\-background\fR | \fB\-f\fR | \fB\-\-foreground\fR]
-[\fB\-o\fR \fIfile\fR | \fB\-\-random-device=\fIfile\fR]
+[\fB\-p\fR \fIfile\fR | \fB\-\-pidfile=\fIfile\fR]
+[\fB\-B\fR \fIn\fR | \fB\-\-rng\-buffers=\fIn\fR]
+[\fB\-\-trng=\fIname\fR]
+[\fB\-R\fR \fIname\fR | \fB\-\-rng-driver=\fIname\fR]
 [\fB\-r\fR \fIfile\fR | \fB\-\-rng-device=\fIfile\fR]
+[\fB\-H\fR \fIn.nnn\fR | \fB\-\-rng\-entropy=\fIn.nnn\fR]
+[\fB\-Q\fR \fIquality\fR | \fB\-\-rng\-quality=\fIquality\fR]
+[\fB\-T\fR \fIn\fR | \fB\-\-rng-timeout=\fIn\fR]
+[\fB\-o\fR \fIfile\fR | \fB\-\-random-device=\fIfile\fR]
 [\fB\-s\fR \fIn\fR | \fB\-\-random-step=\fIn\fR]
 [\fB\-W\fR \fIn\fR | \fB\-\-fill-watermark=\fIn[%]\fR]
 [\fB\-t\fR \fIn\fR | \fB\-\-feed-interval=\fIn\fR]
-[\fB\-\-trng=\fIname\fR]
-[\fB\-H\fR \fIn.nnn\fR | \fB\-\-rng\-entropy=\fIn.nnn\fR]
-[\fB\-B\fR \fIn\fR | \fB\-\-rng\-buffers=\fIn\fR]
-[\fB\-T\fR \fIn\fR | \fB\-\-rng-timeout=\fIn\fR]
-[\fB\-p\fR \fIfile\fR | \fB\-\-pidfile=\fIfile\fR]
 [\fB\-?\fR] [\fB\-\-help\fR]
 [\fB\-V\fR] [\fB\-\-version\fR]
 .RI
 
 .SH DESCRIPTION
-This daemon feeds entropy from a true random number generator (TRNG) to the
-kernel's entropy pool, after checking the data to ensure that it is suitably
-random.
+This daemon feeds entropy from a trusted source of true randomness (called
+an \fIentropy source\fR) such as a hardware true random number generator
+(TRNG), to an \fIentropy sink\fR such as the kernel's entropy pool.  It does
+so only after checking the data to ensure that it is suitably random.
 .PP
 Entropy measures the uncertainty (randomness) contained in an unit of
 information.  For the Linux kernel, this unit is a binary bit.  The kernel
 keeps all the entropy it gathers from different sources in an entropy pool,
-from which it drawns uncertainty to generate random numbers.
+from which it drawns uncertainty to generate random numbers.  The primary
+purpose of \fIrngd\fR is to keep this pool as full of randomness as possible.
 .PP
 \fIrngd\fR works on blocks of 20000 bits at a time, using the FIPS 140-2 tests
-to verify the randomness of the block of data.  If it is deemed random, the
-block is fed back \fIrandom-step\fR*8 bits at a time to the kernel, until the
-kernel's entropy pool is full.
+to verify the randomness of the block of data.  If that data is deemed random,
+the block is fed back \fIrandom-step\fR*8 bits at a time to the entropy sink,
+(in the case of the kernel, this is done until the kernel's entropy pool is 
+at least \fIfill-watermark\fR full).
 .PP
-When the entropy pool is full, the daemon will force-feed the kernel
-\fIrandom-step\fR*8 bits of data every \fIfeed-interval\fR seconds,
-to stir the entropy pool.  If the TRNG used by \fIrngd\fR is of very high
-quality, this will improve the entropy of the pool.
+If working with the kernel as an entropy sink, and the entropy pool is full,
+the daemon will force-feed the kernel \fIrandom-step\fR*8 bits of data every
+\fIfeed-interval\fR seconds, to stir the entropy pool.  If the entropy source
+used by \fIrngd\fR is of very high quality, this will improve the entropy of
+the pool.
 .PP
 The \fB\-f\fR or \fB\-\-foreground\fR options can be used to tell
 \fBrngd\fR to avoid forking on startup.  This is typically used for
 debugging.  The \fB\-b\fR or \fB\-\-background\fR options, which fork and put
 \fBrngd\fR into the background automatically, are the default.
 .PP
+The \fB\-R\fR or \fB\-\-rng\-driver\fR options can be used to select the
+type of entropy source.
 The \fB\-r\fR or \fB\-\-rng\-device\fR options can be used to select an
 alternate source of entropy, instead of the default \fI@DEVHWRANDOM@\fR.
 The \fB\-o\fR or \fB\-\-random\-device\fR options can be used to select
@@ -68,16 +77,24 @@ usage that a larger number of buffers can accomodate.
 .SH OPTIONS
 .TP
 \fB\-b\fR, \fB\-\-background\fR
-Become a daemon (default)
+Become a daemon (default).
 .TP
 \fB\-f\fR, \fB\-\-foreground\fR
-Do not fork, nor detach from the controlling terminal
+Do not fork, nor detach from the controlling terminal.
+.TP
+\fB\-R\fI name\fR, \fB\-\-rng\-driver=\fIname\fR (default: stream)
+Entropy source driver.  \fIstream\fR is a general purpose Unix stream input
+driver, capable of receiving data from a file, named pipe, or Unix character
+device.
+\fIviapadlock\fR is an user-space driver for the TRNG embedded on some VIA 
+CPUs that have the VIA PadLock security engine.
 .TP
 \fB\-o\fI file\fR, \fB\-\-random\-device=\fIfile\fR (default: @DEVRANDOM@)
-Kernel device used for entropy output
+Kernel device used for entropy output.
 .TP
 \fB\-r\fI file\fR, \fB\-\-rng\-device=\fIfile\fR (default: @DEVHWRANDOM@)
-Kernel device used for entropy input
+Kernel device, fifo or file used for entropy input by the \fIstream\fR
+entropy source driver.
 .TP
 \fB\-\-trng=\fIname\fR
 Selects known-good defaults for some TRNGs.  \fIhelp\fR lists all
@@ -86,10 +103,17 @@ other options.
 .TP
 \fB\-H \fIn.n\fR, \fB\-\-rng\-entropy=\fIn.n\fR (default: 1.0)
 Entropy per bit of input data.  This is a floating point
-number between 0 and 1 (inclusive)
+number between 0 and 1 (inclusive).
+.TP
+\fB\-Q\fR \fIquality\fR, \fB\-\-rng\-quality=\fIquality\fR
+Selects the quality of the random data an entropy source will generate. 
+Quality is: \fIdefault\fR, \fIlow\fR, \fImedium\fR or \fIhigh\fR. 
+Do not use anything but \fIhigh\fR if the entropy sink will use the random
+data directly, instead of using it to seed a PRNG/entropy pool. Ignored by
+the \fIstream\fR entropy source driver.
 .TP
 \fB\-B \fIn\fR, \fB\-\-rng\-buffers=\fIn\fR (default: 3)
-Number of 20000 bit buffers to use
+Number of 20000 bit buffers to use.
 .TP
 \fB\-s\fI n\fR, \fB\-\-random\-step=\fIn\fR (default: 64)
 Number of bytes written to \fIrandom-device\fR at a time.  This
@@ -120,13 +144,13 @@ before giving up and aborting.  Zero disables this functionality, and
 will cause \fIrngd\fR to wait forever for the entropy source.
 .TP
 \fB\-p\fI file\fR, \fB\-\-pidfile=\fIfile\fR (default: @PIDFILE@)
-File to write PID to when running in background mode
+File to write PID to when running in background mode.
 .TP
 \fB\-?\fR, \fB\-\-help\fR
 Give a short summary of all program options.
 .TP
 \fB\-V\fR, \fB\-\-version\fR
-Print program version
+Print program version.
 
 .SH WARNING
 Depending on its settings, \fIrngd\fR can dominate the kernel's entropy pool,
@@ -202,13 +226,24 @@ Please restart rngd every time the kernel entropy pool size is changed.
 
 .SH FILES
 @DEVRANDOM@, @DEVHWRANDOM@, @PIDFILE@,
+/proc/sys/kernel/random/poolsize
 /proc/sys/kernel/random/write_wakeup_threshold
 
 .SH SEE ALSO
 random(4), rngtest(1)
 .TP
-FIPS PUB 140-2 Security Requirements for Cryptographic Modules, NIST, 
+FIPS PUB 140-2 Security Requirements for Cryptographic Modules; NIST;
 http://csrc.nist.gov/cryptval/140-2.htm
+.TP
+NIST Special Publication 800-22; NIST;
+http://csrc.nist.gov/rng/rng2.html
+.TP
+The Intel(R) Random Number Generator; Cryptography Research, Inc.; 1999;
+http://developer.intel.com/design/chipsets/rng/CRIwp.htm
+.TP
+Evaluation of VIA C3 Nehemiah Random Number Generator;
+Cryptography Research, Inc.; 2003;
+http://www.cryptography.com/
 
 .SH AUTHORS
 Philipp Rumpf

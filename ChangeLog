@@ -32,6 +32,8 @@ STILL NOT SENT UPSTREAM:
 	  for pointer arithmetric
 
 	Other:
+	* fips.h: Minor cleanups
+	* configure.ac: use AS_HELP_STRING and AS_IF where applicable
 	* rngd.c: use option grouping on Argp options vector
 	* rngd.h, rngd.c, rngd_linux.c: precalculate poll timeout
 	  on init_kernel_rng.  Now arguments->poll_timeout is an int
@@ -70,6 +72,17 @@ STILL NOT SENT UPSTREAM:
 	  rngd_signal.c: use message_strerr()
 	* rngd.c, rngd_entsource.c, rngd_linux.c, rngd_threads.c, stats.c,
 	  util.c: add many assert() calls
+	* rngd_entsource.c, rngd_entsource.h, rngd.h, rngd.c, rngd.8.in: 
+	  implement entropy source drivers (--rng-driver), laying 
+	  groundwork for a VIA TRNG userspace driver in rngd.
+	* autogen.sh, .cvsignore: config.sub and config.guess
+	* configure.ac, rngd_entsource.c: --enable-viapadlock support
+	  This requires AC_CANONICAL_* which brings in config.sub/guess
+
+	* Work sponsored by Mekensleep.com, which donated unlimited access
+	  to a VIA Nehemiah system for the development:
+	  * New VIA PadLock TRNG high-performance user-space driver, 
+	    capable of delivering several Mbit/s of entropy
 
 Tue May 09 2004  Henrique de Moraes Holschuh <hmh@debian.org>
 
