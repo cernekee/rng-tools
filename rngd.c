@@ -405,6 +405,7 @@ void message_strerr(int priority, int errornumber,
 {
 	va_list ap;
 	char errbuf[STR_BUF_LEN];
+	char *strerrbuf = errbuf;
 	char *errfmt = NULL;
 	int s;
 
@@ -412,11 +413,11 @@ void message_strerr(int priority, int errornumber,
 
 	memset(&errbuf, 0, sizeof(errbuf));
 	if (errornumber) 
-		strerror_r(errornumber, errbuf, sizeof(errbuf)-1);
-	s = strlen(fmt) + strlen(errbuf) + 3;
+		strerrbuf = strerror_r(errornumber, errbuf, sizeof(errbuf)-1);
+	s = strlen(fmt) + strlen(strerrbuf) + 3;
 	errfmt = malloc(s);
 	if (errfmt) {
-		snprintf(errfmt, s, "%s: %s", fmt, errbuf);
+		snprintf(errfmt, s, "%s: %s", fmt, strerrbuf);
 		errfmt[s-1] = 0;
 	} else {
 		errfmt = (char *)fmt;
