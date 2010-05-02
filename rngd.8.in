@@ -12,7 +12,7 @@ device) to an entropy sink (e.g. kernel entropy pool)
 [\fB\-b\fR | \fB\-\-background\fR | \fB\-f\fR | \fB\-\-foreground\fR]
 [\fB\-p\fR \fIfile\fR | \fB\-\-pidfile=\fIfile\fR]
 [\fB\-B\fR \fIn\fR | \fB\-\-rng\-buffers=\fIn\fR]
-[\fB\-\-trng=\fIname\fR]
+[\fB\-\-hrng=\fIname\fR]
 [\fB\-R\fR \fIname\fR | \fB\-\-rng-driver=\fIname\fR]
 [\fB\-r\fR \fIfile\fR | \fB\-\-rng-device=\fIfile\fR]
 [\fB\-H\fR \fIn.nnn\fR | \fB\-\-rng\-entropy=\fIn.nnn\fR]
@@ -96,7 +96,7 @@ Kernel device used for entropy output.
 Kernel device, fifo or file used for entropy input by the \fIstream\fR
 entropy source driver.
 .TP
-\fB\-\-trng=\fIname\fR
+\fB\-\-hrng=\fIname\fR
 Selects known-good defaults for some HRNGs.  \fIhelp\fR lists all
 known HRNGs.  You can override these defaults selectively with the
 other options.
