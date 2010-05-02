@@ -58,7 +58,6 @@
 #include "fips.h"
 #include "exits.h"
 #include "stats.h"
-#include "util.h"
 #include "rngd_threads.h"
 #include "rngd_signals.h"
 #include "rngd_entsource.h"
@@ -84,27 +83,21 @@ int exitstatus = EXIT_SUCCESS;		/* Exit status on SIGTERM */
 static FILE *daemon_lockfp = NULL;	/* Lockfile file pointer */
 static int daemon_lockfd;		/* Lockfile file descriptor */
 
-kernel_mode_t kernel;			/* Kernel compatibility mode */
-
 /* Command line arguments and processing */
 const char *argp_program_version = 
 	PROGNAME " " VERSION "\n"
 	"Copyright (c) 2001-2004 by Jeff Garzik\n"
-	"Copyright (c) 2004,2005 by Henrique de Moraes Holschuh\n"
+	"Copyright (c) 2004 by Henrique de Moraes Holschuh\n"
 	"Copyright (c) 2001 by Philipp Rumpf\n"
-#ifdef VIA_ENTSOURCE_DRIVER
-	"VIA PadLock RNG code based on work by Martin Peck\n"
-#endif
-	"This is free software; see the source for copying conditions.  "
-	"There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR "
-	"A PARTICULAR PURPOSE.";
+	"This is free software; see the source for copying conditions.  There is NO "
+	"warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
 const char *argp_program_bug_address = PACKAGE_BUGREPORT;
 error_t argp_err_exit_status = EXIT_USAGE;
 
 static char doc[] =
 	"Check and feed random data from hardware device to kernel entropy pool.\n";
 
-#define ARGP_RNGD_CMDLINE_TRNG		0x81
+#define ARGP_RNGD_CMDLINE_HRNG		0x81
 #define ARGP_RNGD_CMDLINE_TIMEOUT	0x82
 	
 static struct argp_option options[] = {
@@ -122,67 +115,40 @@ static struct argp_option options[] = {
 
 	/**/ { 0, 0, 0, 0, "Input (entropy source) control" }, /* ========= */
 
-	{ "rng-driver", 'R', "name", 0,
-	  "Select the entropy source driver: \"stream\" or \"viapadlock\" "
-	  "(default: stream). "
-	  "\"stream\" is a general purpose Unix stream input driver, and "
-	  "honours rng-device, rng-timeout, and rng-entropy; "
-	  "\"viapadlock\" is a driver for the VIA PadLock TRNG. It honours "
-	  "rng-entropy and rng-timeout" },
-
 	{ "rng-device", 'r', "file", 0,
 	  "Entropy source (default: " DEVHWRANDOM ")" },
 
 	{ "rng-timeout", 'T', "n", 0,
-	  "Wait at most \"n\" seconds for the entropy source to provide "
-	  "some initial data. Set to zero to wait forever (default: 10s)" },
+	  "Wait at most n seconds for the random data source to provide some "
+	  "initial data.  Set to zero to wait forever (default: 10)" },
 
 	{ "rng-entropy", 'H', "n", 0,
-	  "Entropy per bit of data received from entropy source (default: "
-	  "1.0 for the \"stream\" entropy source driver, automatic for other "
-	  "entropy source drivers), 0 < n <= 1.0" },
+	  "Entropy per bit of the hardware RNG (default: 1.0), 0 < n <= 1.0" },
 
-	{ "rng-quality", 'Q', "quality", 0,
-	  "If the entropy source supports it, selects the quality of the "
-	  "random data it will generate. Quality is: \"default\", \"low\", "
-	  "\"medium\" or \"high\". Do not use anything but \"high\" if the "
-	  "entropy sink will use the random data directly, instead of using "
-	  "it to seed a PRNG/entropy pool. Ignored by the \"stream\" "
-	  "entropy source driver" },
-
-	{ "trng", ARGP_RNGD_CMDLINE_TRNG, "name", 0,
-	  "Selects known-good defaults for rng-driver, rng-timeout and "
-	  "rng-entropy, for a given TRNG. These can be overriden by specifying "
-	  "one of those options explicitly. Use --trng=help to get a list of "
-	  "known TRNGs" },
+	{ "hrng", ARGP_RNGD_CMDLINE_HRNG, "name", 0,
+	  "Load known-good defaults for a given HRNG.  Use --hrng=help to "
+	  "get a list of known HRNGs" },
 
 	/**/ { 0, 0, 0, 0, "Output (entropy sink) control" }, /* ========== */
-
-	/* { "output-driver", 'O', "name", 0,
-	  "Entropy sink driver: (default: linux-random). "
-	  "\"linux-random\" is the usual Linux /dev/random kernel driver.  It "
-	  "honours random-device, random-step, feed-interval, fill-watermark."
-	   }, */
-
+	
 	{ "random-device", 'o', "file", 0,
 	  "Kernel device used for entropy output (default: " DEVRANDOM ")" },
 
 	{ "random-step", 's', "n", 0,
 	  "Number of bytes written to random-device at a time (default: 64), "
-	  "8 <= n <= " XSTR(FIPS_RNG_BUFFER_SIZE) ", \"n\" must be even" },
+	  "8 <= n <= " XSTR(FIPS_RNG_BUFFER_SIZE) ", n must be even" },
 
 	{ "timeout", ARGP_RNGD_CMDLINE_TIMEOUT, "n", 0,
 	  "Deprecated, same as --feed-interval" },
 
 	{ "feed-interval", 't', "n", 0,
-	  "When the entropy pool is full, write to random-device every "
-	  "\"n\" seconds. Set to zero to disable (default: 60)" },
+	  "When the entropy pool is full, write to random-device every n "
+	  "seconds.  Set to zero to disable (default: 60)" },
 
 	{ "fill-watermark", 'W', "n[%]", 0,
-	  "Do not stop feeding entropy to random-device until at least "
-	  "\"n\" bits of entropy are available in the pool. \"n\" can be "
-	  "the absolute number of bits, or a percentage of the pool size "
-	  "(default: 50%), "
+	  "Do not stop feeding entropy to random-device until at least n "
+	  "bits of entropy are available in the pool. n can be the absolute "
+	  "number of bits, or a percentage of the pool size (default: 50%), "
 	  "0 <= n <= kernel random pool size, or 0% <= n <= 100%" },
 
 	{ 0 },
@@ -198,22 +164,19 @@ static struct arguments default_arguments = {
 	.daemon		= 1,
 	.rng_entropy	= 1.0,
 	.rng_buffers	= 3,
-	.rng_quality	= 0,
-	.rng_driver	= RNGD_ENTSOURCE_UNIXSTREAM,
 };
 struct arguments *arguments = &default_arguments;
 
-/* Predefined known-good values for TRNGs */
+/* Predefined known-good values for HRNGs */
 struct trng_params {
-	char *tag;		/* Short name of TRNG */
-	char *name;		/* Full Name of TRNG */
+	char *tag;		/* Short name of HRNG */
+	char *name;		/* Full Name of HRNG */
 	int width;		/* Best width for continuous run test */
 	int buffers;		/* Recommended value for rng-buffers */
 	double entropy;		/* Recommended value for rng-entropy */
-	entropy_source_driver_t driver;  /* Entropy source driver */
 };
 static struct trng_params trng_parameters[] = {
-	/* Device: Intel FWH TRNG (82802AB/82802AC)
+	/* Device: Intel FWH RNG (82802AB/82802AC)
 	 * Kernel driver: hw_random or i810_rng
 	 * Device width: 8 bits
 	 * Entropy: H > 0.999
@@ -226,17 +189,15 @@ static struct trng_params trng_parameters[] = {
 	 * Whitepaper: Cryptographic Research
 	 * http://www.cryptography.com/resources/whitepapers/IntelRNG.pdf
 	 */
-	{ .name 	= "Intel FWH (82802AB/AC) TRNG",
+	{ .name 	= "Intel FWH (82802AB/AC) RNG",
 	  .tag		= "intelfwh",
 	  .width	= 32,
 	  .buffers	= 5,
-	  .entropy	= 0.998,
-	  .driver	= RNGD_ENTSOURCE_UNIXSTREAM,
+	  .entropy	= 0.998 
 	},
 
-	/* Device: VIA Padlock (Nehemiah CPU core) TRNG
+	/* Device: VIA Padlock (Nehemiah CPU core) RNG
 	 * Kernel driver: hw_random
-	 * User space driver: RNGD_ENTSOURCE_VIA
 	 * Device width: 8 bits (internal), 64 bits (external)
 	 * Entropy: H > 0.75 (whitener disabled)
 	 *          H > 0.99 (whitener enabled)
@@ -246,24 +207,16 @@ static struct trng_params trng_parameters[] = {
 	 * need patching to archieve better performance (patches and
 	 * data from http://peertech.org/hardware/viarng/).
 	 *
-	 * The hardware has 4 64bit FIFOs to store TRNG data.
+	 * The hardware has 4 64bit FIFOs to store RNG data.
 	 * 
 	 * Whitepaper: Cryptographic Research
 	 * http://www.cryptography.com/resources/whitepapers/VIA_rng.pdf
 	 */
-	{ .name		= "VIA Padlock TRNG (Kernel driver, deprecated)",
-	  .tag		= "viakernel",
+	{ .name		= "VIA Padlock (Nehemiah) RNG",
+	  .tag		= "via",
 	  .width	= 64,
 	  .buffers	= 3,
-	  .entropy	= 0.75,
-	  .driver	= RNGD_ENTSOURCE_UNIXSTREAM,
-	},
-	{ .name		= "VIA Padlock TRNG (experimental)",
-	  .tag		= "viapadlock",
-	  .width	= 64,
-	  .buffers	= 3,
-	  .entropy	= 0.0,
-	  .driver	= RNGD_ENTSOURCE_VIAPADLOCK,
+	  .entropy	= 0.75 
 	},
 	{ NULL },
 };
@@ -273,7 +226,6 @@ static struct trng_params trng_parameters[] = {
  */
 #define SEEN_OPT_RNGBUFFERS	0x01
 #define SEEN_OPT_RNGENTROPY	0x02
-#define SEEN_OPT_RNGDRIVER	0x04
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state)
 {
@@ -380,68 +332,21 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 		break;
 	}
 
-	case 'R': {
-		if (seen_opt & SEEN_OPT_RNGDRIVER) {
-			argp_usage(state);
-		} else if (strcasecmp(arg, "stream") == 0) {
-			arguments->rng_driver = RNGD_ENTSOURCE_UNIXSTREAM;
-			seen_opt |= SEEN_OPT_RNGDRIVER;
-		} else if (strcasecmp(arg, "viapadlock") == 0) { 
-			arguments->rng_driver = RNGD_ENTSOURCE_VIAPADLOCK;
-			if (! (seen_opt & SEEN_OPT_RNGENTROPY))
-				arguments->rng_entropy = 0.0;
-			seen_opt |= SEEN_OPT_RNGDRIVER;
-		} else {
-			argp_usage(state);
-		}
-		break;
-	}
-
-	case 'Q': {
-		static const char* const quality_names[4] = {
-			"default", "low", "medium", "high"
-		};
-
-		int i;
-		for(i = 0; i < 4; i++) {
-			if (strcasecmp(arg, quality_names[i]) == 0) {
-				arguments->rng_quality = i;
-				break;
-			}
-		}
-		if (i >= 4) argp_usage(state);
-		break;
-	}
-
-	case ARGP_RNGD_CMDLINE_TRNG: {	/* --trng */
+	case ARGP_RNGD_CMDLINE_HRNG: {	/* --hrng */
 		int i = 0;
 		if (strcasecmp(arg, "help") == 0) {
 			fprintf(state->out_stream,
-				"TRNG        Description\n");
+				"RNG       Description\n");
 			while (trng_parameters[i].tag) {
-				fprintf(state->out_stream, "%-10s  \"%s\"\n",
+				fprintf(state->out_stream, "%-8s  \"%s\"\n",
 					trng_parameters[i].tag,
 					trng_parameters[i].name);
-				if (trng_parameters[i].entropy != 0.0) {
-					fprintf(state->out_stream,
-						"%-12s"
-						"rng-driver=%s, "
-						"rng-entropy=%0.3f, "
-						"rng-buffers=%d;\n",
-						" ", 
-						entropy_source_driver_name(trng_parameters[i].driver),
-						trng_parameters[i].entropy,
-						trng_parameters[i].buffers);
-				} else {
-					fprintf(state->out_stream,
-						"%-12s"
-						"rng-driver=%s, "
-						"rng-entropy=auto, "
-						"rng-buffers=%d;\n",
-						" ", 
-						entropy_source_driver_name(trng_parameters[i].driver),
-						trng_parameters[i].buffers);
-				}
+				fprintf(state->out_stream,
+					"%-10s"
+					"rng-entropy=%0.3f, "
+					"rng-buffers=%d;\n",
+					" ", trng_parameters[i].entropy,
+					trng_parameters[i].buffers);
 				i++;
 			}
 			exit(EXIT_SUCCESS);
@@ -454,16 +359,13 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 				if (! (seen_opt & SEEN_OPT_RNGBUFFERS))
 					arguments->rng_buffers =
 						trng_parameters[i].buffers;
-				if (! (seen_opt & SEEN_OPT_RNGDRIVER))
-					arguments->rng_driver =
-						trng_parameters[i].driver;
 				break;
 			}
 			i++;
 		}
 		if (!trng_parameters[i].tag)
 			argp_failure(state, argp_err_exit_status, 0,
-				"Unknown TRNG, try --trng=help");
+				"Unknown RNG, try --hrng=help");
 		break;
 	}
 
@@ -509,7 +411,7 @@ void message_strerr(int priority, int errornumber,
 
 	va_start(ap, fmt);
 
-	memset(errbuf, 0, sizeof(errbuf));
+	memset(&errbuf, 0, sizeof(errbuf));
 	if (errornumber) 
 		strerrbuf = strerror_r(errornumber, errbuf, sizeof(errbuf)-1);
 	s = strlen(fmt) + strlen(strerrbuf) + 3;
@@ -601,7 +503,7 @@ static void dump_rng_stats(void)
 
 	pthread_mutex_lock(&rng_stats.group1_mutex);
 	message(LOG_INFO, dump_stat_counter(buf, sizeof(buf),
-			"bits received from TRNG source",
+			"bits received from HRNG source",
 			rng_stats.bytes_received * 8));
 	pthread_mutex_unlock(&rng_stats.group1_mutex);
 	pthread_mutex_lock(&rng_stats.group3_mutex);
@@ -625,7 +527,7 @@ static void dump_rng_stats(void)
 	pthread_mutex_unlock(&rng_stats.group2_mutex);
 	pthread_mutex_lock(&rng_stats.group1_mutex);
 	message(LOG_INFO, dump_stat_bw(buf, sizeof(buf),
-			"TRNG source speed", "bits",
+			"HRNG source speed", "bits",
 			&rng_stats.source_blockfill, FIPS_RNG_BUFFER_SIZE*8));
 	pthread_mutex_unlock(&rng_stats.group1_mutex);
 	pthread_mutex_lock(&rng_stats.group2_mutex);
@@ -653,14 +555,7 @@ int main(int argc, char **argv)
 	pthread_t t1,t2,t3;
 	int sleeptime;
 
-	kernel = kernel_mode();
 	argp_parse(&argp, argc, argv, 0, 0, arguments);
-
-	/* Make sure kernel is supported */
-	if (kernel == KERNEL_UNSUPPORTED) {
-		message(LOG_ERR, "Unsupported kernel detected, exiting...");
-		die (EXIT_OSERR);
-	}
 
 	/* close useless FDs we might have gotten somehow */
 	for(fd = 3; fd < 250; fd++) (void) close(fd);

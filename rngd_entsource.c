@@ -48,7 +48,6 @@
 #include "fips.h"
 #include "stats.h"
 #include "exits.h"
-#include "viapadlock_engine.h"
 #include "rngd_threads.h"
 #include "rngd_signals.h"
 #include "rngd_entsource.h"
@@ -62,8 +61,6 @@ static volatile int pausesource = 0;	/* Pause reading from entropy source */
 static fips_ctx_t fipsctx;		/* Context for the FIPS tests */
 
 /* Data source */
-static entropy_source_driver_t          /* rng data source driver */
-  entropy_source_driver = RNGD_ENTSOURCE_NONE;
 static int rng_fd = -1;			/* rng data source */
 static int rng_source_timeout = 10;	/* rng data source timeout (s) */
 
@@ -75,37 +72,14 @@ pthread_mutex_t	rng_buffer_empty_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  rng_buffer_raw = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t rng_buffer_raw_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/*
- * Return entropy source driver name
- */
-const char *entropy_source_driver_name(entropy_source_driver_t driver)
-{
-	switch (driver) {
-		case RNGD_ENTSOURCE_NONE:
-			return "(none)";
-		case RNGD_ENTSOURCE_UNIXSTREAM:
-			return "UNIX stream";
-		case RNGD_ENTSOURCE_VIAPADLOCK:
-			return "VIA PadLock TRNG";
-		default:
-			return "(unknown)";
-	};
-}
 
-
-/*
- * Read data from the entropy source
+/* Read data from the entropy source 
  *
- * STREAM INPUT DRIVER:
  * Works for both blocking and non-blocking mode,
  * but it will spin using CPU in non-blocking mode...
  *
  * We cannot trust poll/select fully when talking to
- * /dev/hwrandom, which is a real pity.
- *
- * VIA PADLOCK INPUT DRIVER:
- * Does not detect signals, can deadlock if the CPU goes
- * bad.
+ * /dev/hwrng, which is a real pity.
  */
 static int xread(void *buf, size_t size, unsigned int abortonsigalrm)
 {
@@ -116,24 +90,7 @@ static int xread(void *buf, size_t size, unsigned int abortonsigalrm)
 
 	while (size > 0) {
 		do {
-			switch (entropy_source_driver) {
-			  case RNGD_ENTSOURCE_UNIXSTREAM: {
-				r = read(rng_fd, (unsigned char *)buf + off, size);
-				break;
-			  }
-#ifdef VIA_ENTSOURCE_DRIVER
-			  case RNGD_ENTSOURCE_VIAPADLOCK: {
-				r = viapadlock_rng_read((unsigned char *)buf + off, size);
-				if ((r == -1) && (errno == EAGAIN))
-					message(LOG_WARNING,
-						"VIA PadLock RNG configuration changed. Reconfigured.");
-				break;
-			  }
-#endif
-			  default:
-				errno = ENXIO;
-				return -1;
-			}
+			r = read(rng_fd, (unsigned char *)buf + off, size);
 			if (gotsigterm || (abortonsigalrm && gotsigalrm))
 				return -1;
 		} while ((r == -1) && ((errno == EINTR) || (errno == EAGAIN)));
@@ -177,67 +134,17 @@ void init_entropy_source( void )
 {
 	unsigned char tempbuf[4];
 
-	assert(entropy_source_driver == RNGD_ENTSOURCE_NONE);
-
-	entropy_source_driver = arguments->rng_driver;
-	switch (entropy_source_driver) {
-		case RNGD_ENTSOURCE_UNIXSTREAM:
-			rng_fd = open(arguments->rng_name, O_RDONLY);
-			if (rng_fd == -1) {
-				message_strerr(LOG_ERR, errno, "can't open %s",
-						arguments->rng_name);
-				die(EXIT_FAIL);
-			}
-			break;
-		case RNGD_ENTSOURCE_VIAPADLOCK: {
-#ifdef VIA_ENTSOURCE_DRIVER
-			viapadlock_rng_config_t viacfg;
-			double viarng_entropy;
-
-			switch (viapadlock_rng_init(NULL)) {
-				case 0:
-					message(LOG_ERR,
-						"Could not detect a set of "
-						"functional, identical "
-						"VIA PadLock RNGs on "
-						"every CPU.");
-					die(EXIT_OSERR);
-				case 1:
-					break;
-				default:
-					message_strerr(LOG_ERR, errno,
-						"Could not initialize VIA "
-						"PadLock RNG set");
-					die(EXIT_OSERR);
-			}
-
-			viarng_entropy = viapadlock_rng_generate_config(
-					arguments->rng_quality,	&viacfg);
-			if (arguments->rng_entropy == 0.0)
-				arguments->rng_entropy = viarng_entropy;
-
-			/* Reset and enable it at once */
-			if (viapadlock_rng_enable(1, &viacfg)) {
-				message_strerr(LOG_ERR, errno,
-					"Error while trying to enable the "
-					"VIA Padlock RNG");
-				die(EXIT_OSERR);
-			}
-			break;
-#else
-			message(LOG_ERR,
-				"Support for the VIA PadLock entropy source "
-				"driver has not been compiled in.");
-			die(EXIT_USAGE);
-#endif /* VIA_ENTSOURCE_DRIVER */
-		}
-		default:
-			message(LOG_ERR,
-				"Unknown entropy source driver, internal program error!");
-			die(EXIT_USAGE);
-	}
+	assert(rng_fd == -1);
 
 	rng_source_timeout = arguments->rng_timeout;
+
+	rng_fd = open(arguments->rng_name, O_RDONLY);
+	if (rng_fd == -1) {
+		message_strerr(LOG_ERR, errno, "can't open %s",
+				arguments->rng_name);
+		die(EXIT_FAIL);
+	}
+
 	if (enable_sigalrm(rng_source_timeout)) die(EXIT_FAIL);
 	/* Discard the first 32 bits */
 	if (xread(tempbuf, sizeof tempbuf, 1)) die(EXIT_FAIL);
@@ -395,13 +302,13 @@ void *do_rng_fips_test_loop( void *trash )
 				if (warnuser && throttling) {
 					warnuser = 0;
 					message(LOG_WARNING,
-					  "Too many consecutive bad blocks of data, check entropy source!");
+					  "Too many consecutive bad blocks of data, check RNG!");
 					message(LOG_NOTICE,
-					  "Throttling down entropy source read speed...");
+					  "Throttling down RNG read speed...");
 				} 
 				if (throttling > MAX_THROTTLE_LEVEL) {
 					message(LOG_CRIT,
-					  "Too many bad blocks, entropy source malfunction assumed");
+					  "Too many bad blocks, RNG malfunction assumed");
 					exitstatus = EXIT_FAIL;
 					kill(masterprocess, SIGTERM);
 					pthread_exit(NULL);
@@ -411,7 +318,7 @@ void *do_rng_fips_test_loop( void *trash )
 				if (throttling) {
 					throttling = 0;
 					warnuser = 1;
-					message(LOG_NOTICE, "entropy source recovered");
+					message(LOG_NOTICE, "RNG recovered");
 				}
 
 				pthread_mutex_lock(&rng_buffer_ready_mutex);

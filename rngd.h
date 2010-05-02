@@ -37,8 +37,6 @@
 
 #include "fips.h"
 #include "stats.h"
-#include "util.h"
-#include "rngd_entsource.h"
 
 #define MAX_RNG_BUFFERS 1000
 #define STR_BUF_LEN 1024
@@ -56,14 +54,11 @@ struct arguments {
 	int feed_interval;
 
 	int rng_timeout;
-	int rng_quality;	/* 0: default, 1=low, 2=med, 3=high */
 	
 	int daemon;
 
 	double rng_entropy;
 	int rng_buffers;
-
-	entropy_source_driver_t rng_driver;
 };
 extern struct arguments *arguments;
 
@@ -71,8 +66,8 @@ extern struct arguments *arguments;
 struct rng_stats {
 	/* Group 1 */
 	pthread_mutex_t group1_mutex;	/* Mutex to access group 1 */
-	uint64_t bytes_received;	/* Bytes read from entropy source */
-	struct rng_stat source_blockfill;  /* Block-receive time */
+	uint64_t bytes_received;	/* Bytes read from RNG source */
+	struct rng_stat source_blockfill;	/* Block-receive time */
 
 	/* Group 2 */
 	pthread_mutex_t group2_mutex;	/* Mutex to access group 2 */
@@ -85,8 +80,8 @@ struct rng_stats {
 	/* Group 3 */
 	pthread_mutex_t group3_mutex;	/* Mutex to access group 3 */
 	uint64_t bytes_sent;		/* Bytes sent to RNG sink */
-	uint64_t entropy_sent;		/* Bits of entropy sent to ent. sink */
-	uint64_t sink_starved;		/* How many times we waited for
+	uint64_t entropy_sent;		/* Bits of entropy sent to RNG sink */
+	uint64_t sink_starved;		/* How many times we waited for 
 					   FIPS-approved buffers to be ready */
 	uint64_t buffer_lowmark;	/* Minimum number of ready buffers we
 					   had after startup */
@@ -98,9 +93,6 @@ extern struct rng_stats rng_stats;
 extern pid_t masterprocess;		/* PID of the master process */
 extern int am_daemon;			/* Nonzero if we went daemon */
 extern int exitstatus;			/* Exit status on SIGTERM */
-
-/* Other global information */
-extern kernel_mode_t kernel;		/* Kernel compatibility mode */
 
 /*
  * Log messages to syslog or stdio (thread-safe)
