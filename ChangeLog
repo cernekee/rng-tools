@@ -19,6 +19,7 @@ STILL NOT SENT UPSTREAM:
 	* Extensively revamped and updated manpage;
 	* Configure /dev/random, /dev/hwrandom and pidfile
 	  location using autoconf, to avoid hardcoded defaults;
+	* Kill warnings on stats.c and rng-test.c on ia64
 
 SENT AND WAITING MERGE:
 	* pidfile support for background mode;

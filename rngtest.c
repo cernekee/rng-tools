@@ -29,8 +29,12 @@
 
 #include "rng-tools-config.h"
 
+/* For printf types macros (PRIu64) */
+#define __STDC_FORMAT_MACROS
+
 #include <unistd.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -316,7 +320,7 @@ static void dump_rng_stats(void)
 			&rng_stats.sink_blockfill, FIPS_RNG_BUFFER_SIZE*8));
 
 	gettimeofday(&now, 0);
-	fprintf(stderr, "%sProgram run time: %llu microseconds\n",
+	fprintf(stderr, "%sProgram run time: %" PRIu64 " microseconds\n",
 		logprefix, elapsed_time(&rng_stats.progstart, &now));
 }
 
