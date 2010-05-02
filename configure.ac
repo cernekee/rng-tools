@@ -17,9 +17,10 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-AC_INIT([rng-tools], [2-unofficial-mt.10], [rng-tools@packages.debian.org])
+AC_INIT([rng-tools], [2-unofficial-mt.11], [rng-tools@packages.debian.org])
 AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR([rngd.c])
+AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([1.9 gnu])
 AC_CONFIG_HEADERS([rng-tools-config.h])
 
@@ -33,7 +34,7 @@ AC_PROG_GCC_TRADITIONAL
 
 dnl Checks for header files.
 dnl AC_HEADER_STDC
-dnl AC_CHECK_HEADERS(sys/ioctl.h unistd.h)
+dnl AC_CHECK_HEADERS([sys/ioctl.h unistd.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 dnl AC_TYPE_SIZE_T
@@ -88,6 +89,21 @@ AC_ARG_WITH([hwrng],
 AC_DEFINE_UNQUOTED(DEVHWRANDOM, "$DEVHWRANDOM",
 	[Name of the source HRNG device])
 AC_SUBST(DEVHWRANDOM)
+
+AC_ARG_ENABLE(viapadlock,
+	AS_HELP_STRING([--enable-viapadlock],
+		[Enable suport for VIA PadLock TRNG entropy source (detect)]),
+	[VIADRIVER="$enableval"],
+	[VIADRIVER="no"
+	 AS_IF(test "$host_cpu" == "i586" || test "$host_cpu" == "i686",
+	 	[VIADRIVER="yes"])
+	])
+AC_MSG_CHECKING([whether to include the VIA PadLock TRNG driver])
+AS_IF(test "$VIADRIVER" == "yes",
+	[AC_DEFINE(VIA_ENTSOURCE_DRIVER, 1, 
+		[Include code for VIA PadLock TRNG driver])
+	 AC_MSG_RESULT([yes]) ],
+	[AC_MSG_RESULT([no])] )
 
 dnl --------------------------
 dnl autoconf output generation

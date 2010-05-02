@@ -9,9 +9,10 @@ set -e
 # Refresh GNU autotools toolchain.
 rm -rf autom4te.cache
 rm -f missing install-sh mkinstalldirs depcomp
-aclocal-1.9
-autoheader
-automake-1.9 --gnu --add-missing --copy
-autoconf
+rm -f config.sub config.guess
+# we use the std. GNU ones
+rm -f INSTALL COPYING
+
+autoreconf -i
 
 exit 0

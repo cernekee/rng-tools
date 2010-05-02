@@ -37,14 +37,16 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+build_triplet = @build@
+host_triplet = @host@
 sbin_PROGRAMS = rngd$(EXEEXT)
 bin_PROGRAMS = rngtest$(EXEEXT)
-subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/rng-tools-config.h.in \
 	$(srcdir)/rngd.8.in $(srcdir)/rngtest.1.in \
 	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
-	depcomp install-sh missing
+	config.guess config.sub depcomp install-sh missing
+subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -59,7 +61,8 @@ AR = ar
 ARFLAGS = cru
 librngd_a_AR = $(AR) $(ARFLAGS)
 librngd_a_LIBADD =
-am_librngd_a_OBJECTS = fips.$(OBJEXT) stats.$(OBJEXT) util.$(OBJEXT)
+am_librngd_a_OBJECTS = fips.$(OBJEXT) stats.$(OBJEXT) util.$(OBJEXT) \
+	viapadlock_engine.$(OBJEXT)
 librngd_a_OBJECTS = $(am_librngd_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" \
 	"$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man8dir)"
@@ -169,10 +172,18 @@ am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
 bindir = @bindir@
+build = @build@
 build_alias = @build_alias@
+build_cpu = @build_cpu@
+build_os = @build_os@
+build_vendor = @build_vendor@
 datadir = @datadir@
 exec_prefix = @exec_prefix@
+host = @host@
 host_alias = @host_alias@
+host_cpu = @host_cpu@
+host_os = @host_os@
+host_vendor = @host_vendor@
 includedir = @includedir@
 infodir = @infodir@
 install_sh = @install_sh@
@@ -191,7 +202,7 @@ target_alias = @target_alias@
 SUBDIRS = contrib
 man_MANS = rngd.8 rngtest.1
 noinst_LIBRARIES = librngd.a
-common_sources = exits.h fips.h stats.h util.h
+common_sources = exits.h fips.h stats.h util.h viapadlock_engine.h
 rngd_SOURCES = $(common_sources) rngd.h rngd.c \
 		  rngd_threads.h rngd_threads.c \
 		  rngd_signals.h rngd_signals.c \
@@ -201,8 +212,10 @@ rngd_SOURCES = $(common_sources) rngd.h rngd.c \
 rngd_LDADD = librngd.a @LIB_PTHREAD@
 rngtest_SOURCES = $(common_sources) rngtest.c
 rngtest_LDADD = librngd.a
-librngd_a_SOURCES = fips.h fips.c stats.h stats.c \
-		    util.h util.c
+librngd_a_SOURCES = fips.h fips.c \
+		    stats.h stats.c \
+		    util.h util.c \
+		    viapadlock_engine.h viapadlock_engine.c
 
 EXTRA_DIST = autogen.sh
 all: rng-tools-config.h
@@ -339,6 +352,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rngtest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stats.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/viapadlock_engine.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
