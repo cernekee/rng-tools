@@ -9,7 +9,7 @@
  * when it's full, which makes predicting the entropy store's contents
  * harder.
  *
- * Copyright (C) 2001 Philipp Rumpf <prumpf@mandrakesoft.com>
+ * Copyright (C) 2001 Philipp Rumpf
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,9 +28,11 @@
 
 #define _GNU_SOURCE
 
-#ifdef HAVE_CONFIG_H
-#  include "rng-tools-config.h"
+#ifndef HAVE_CONFIG_H
+#error Invalid or missing autoconf build environment
 #endif
+
+#include "rng-tools-config.h"
 
 #include <sys/fcntl.h>
 #include <sys/ioctl.h>
@@ -44,6 +46,7 @@
 #include <argp.h>
 #include <syslog.h>
 
+#include "fips.h"
 
 /*
  * argp stuff
@@ -51,7 +54,7 @@
 
 
 const char *argp_program_version = "rngd " VERSION;
-const char *argp_program_bug_address = "Philipp Rumpf <prumpf@mandrakesoft.com>";
+const char *argp_program_bug_address = PACKAGE_BUGREPORT;
 
 static char doc[] = "rngd";
 
@@ -86,11 +89,11 @@ struct arguments {
 };
 
 static struct arguments default_arguments = {
-	rng_name:	"/dev/hwrandom",
-	random_name:	"/dev/random",
-	poll_timeout:	60,
-	random_step:	64,
-	daemon:		1,
+	.rng_name	= "/dev/hwrandom",
+	.random_name	= "/dev/random",
+	.poll_timeout	= 60,
+	.random_step	= 64,
+	.daemon		= 1,
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -133,6 +136,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 
 static struct argp argp = { options, parse_opt, NULL, doc };
 
+/* Logic and contexts */
+static fips_ctx_t fipsctx;		/* Context for the FIPS tests */
+
 
 /*
  * daemon abstraction
@@ -150,146 +156,18 @@ static int am_daemon;
 } while (0)
 
 
-/*
- * FIPS test
- */
-
-
-/*
- * number of bytes required for a FIPS test.
- * do not alter unless you really, I mean
- * REALLY know what you are doing.
- */
-#define FIPS_THRESHOLD 2500
-
-/* These are the startup tests suggested by the FIPS 140-1 spec section
-*  4.11.1 (http://csrc.nist.gov/fips/fips1401.htm)
-*  The Monobit, Poker, Runs, and Long Runs tests are implemented below.
-*  This test is run at periodic intervals to verify
-*  data is sufficiently random. If the tests are failed the RNG module
-*  will no longer submit data to the entropy pool, but the tests will
-*  continue to run at the given interval. If at a later time the RNG
-*  passes all tests it will be re-enabled for the next period.
-*   The reason for this is that it is not unlikely that at some time
-*  during normal operation one of the tests will fail. This does not
-*  necessarily mean the RNG is not operating properly, it is just a
-*  statistically rare event. In that case we don't want to forever
-*  disable the RNG, we will just leave it disabled for the period of
-*  time until the tests are rerun and passed.
-*
-*  For argument sake I tested /dev/urandom with these tests and it
-*  took 142,095 tries before I got a failure, and urandom isn't as
-*  random as random :)
-*/
-
-static int poker[16], runs[12];
-static int ones, rlength = -1, current_bit, longrun;
-
-/*
- * rng_fips_test_store - store 8 bits of entropy in FIPS
- * 			 internal test data pool
- */
-static void rng_fips_test_store (int rng_data)
-{
-	int j;
-	static int last_bit = 0;
-
-	poker[rng_data >> 4]++;
-	poker[rng_data & 15]++;
-
-	/* Note in the loop below rlength is always one less than the actual
-	   run length. This makes things easier. */
-	for (j = 7; j >= 0; j--) {
-		ones += current_bit = (rng_data & 1 << j) >> j;
-		if (current_bit != last_bit) {
-			/* If runlength is 1-6 count it in correct bucket. 0's go in
-			   runs[0-5] 1's go in runs[6-11] hence the 6*current_bit below */
-			if (rlength < 5) {
-				runs[rlength +
-				     (6 * current_bit)]++;
-			} else {
-				runs[5 + (6 * current_bit)]++;
-			}
-
-			/* Check if we just failed longrun test */
-			if (rlength >= 33)
-				longrun = 1;
-			rlength = 0;
-			/* flip the current run type */
-			last_bit = current_bit;
-		} else {
-			rlength++;
-		}
-	}
-}
-
-/*
- * now that we have some data, run a FIPS test
- */
-static int rng_run_fips_test (unsigned char *buf)
-{
-	int i, j;
-	int rng_test = 0;
-
-	for (i=0; i<FIPS_THRESHOLD; i++) {
-		rng_fips_test_store(buf[i]);
-	}
-
-	/* add in the last (possibly incomplete) run */
-	if (rlength < 5)
-		runs[rlength + (6 * current_bit)]++;
-	else {
-		runs[5 + (6 * current_bit)]++;
-		if (rlength >= 33)
-			rng_test |= 8;
-	}
-	
-	if (longrun) {
-		rng_test |= 8;
-		longrun = 0;
-	}
-
-	/* Ones test */
-	if ((ones >= 10346) || (ones <= 9654))
-		rng_test |= 1;
-	/* Poker calcs */
-	for (i = 0, j = 0; i < 16; i++)
-		j += poker[i] * poker[i];
-	if ((j >= 1580457) || (j <= 1562821))
-		rng_test |= 2;
-	if ((runs[0] < 2267) || (runs[0] > 2733) ||
-	    (runs[1] < 1079) || (runs[1] > 1421) ||
-	    (runs[2] < 502) || (runs[2] > 748) ||
-	    (runs[3] < 223) || (runs[3] > 402) ||
-	    (runs[4] < 90) || (runs[4] > 223) ||
-	    (runs[5] < 90) || (runs[5] > 223) ||
-	    (runs[6] < 2267) || (runs[6] > 2733) ||
-	    (runs[7] < 1079) || (runs[7] > 1421) ||
-	    (runs[8] < 502) || (runs[8] > 748) ||
-	    (runs[9] < 223) || (runs[9] > 402) ||
-	    (runs[10] < 90) || (runs[10] > 223) ||
-	    (runs[11] < 90) || (runs[11] > 223)) {
-		rng_test |= 4;
-	}
-	
-	rng_test = !rng_test;
-
-	/* finally, clear out FIPS variables for start of next run */
-	memset (poker, 0, sizeof (poker));
-	memset (runs, 0, sizeof (runs));
-	ones = 0;
-	rlength = -1;
-	current_bit = 0;
-
-	return rng_test;
-}
 
 static void xread(int fd, void *buf, size_t size)
 {
 	size_t off = 0;
 	ssize_t r;
 
-	while (size && (r = read(fd, buf + off, size)) > 0) {
+	while (size > 0) {
+		do {
+			r = read(fd, buf + off, size);
+		} while ((r == -1) && (errno == EINTR));
+		if (r <= 0)
+			break;
 		off += r;
 		size -= r;
 	}
@@ -340,16 +218,16 @@ static void random_sleep(int fd, double poll_timeout)
 static void do_loop(int rng_fd, int random_fd, int random_step,
 		    double poll_timeout)
 {
-	unsigned char buf[FIPS_THRESHOLD];
+	unsigned char buf[FIPS_RNG_BUFFER_SIZE];
 	unsigned char *p;
 	int fips;
 
 	for (;;) {
 		xread(rng_fd, buf, sizeof buf);
 
-		fips = rng_run_fips_test(buf);
+		fips = fips_run_rng_test(&fipsctx, buf);
 
-		if (!fips) {
+		if (fips) {
 			message(LOG_DAEMON|LOG_ERR, "failed fips test\n");
 			sleep(1);
 			continue;
@@ -362,7 +240,28 @@ static void do_loop(int rng_fd, int random_fd, int random_step,
 		}
 	}
 }
-		
+
+
+/* Initialize entropy source */
+static int discard_initial_data(int fd)
+{
+	/* Trash 32 bits of what is probably stale (non-random)
+	 * initial state from the RNG.  For Intel's, 8 bits would
+	 * be enough, but since AMD's generates 32 bits at a time...
+	 * 
+	 * The kernel drivers should be doing this at device powerup,
+	 * but at least up to 2.4.24, it doesn't. */
+	unsigned char tempbuf[4];
+	xread(fd, tempbuf, sizeof tempbuf);
+
+	/* Return 32 bits of bootstrap data */
+	xread(fd, tempbuf, sizeof tempbuf);
+
+	return tempbuf[0] | (tempbuf[1] << 8) | 
+		(tempbuf[2] << 16) | (tempbuf[3] << 24);
+}
+
+
 int main(int argc, char **argv)
 {
 	int rng_fd;
@@ -398,6 +297,9 @@ int main(int argc, char **argv)
 
 		openlog("rngd", 0, LOG_DAEMON);
 	}
+
+	/* Bootstrap FIPS tests */
+	fips_init(&fipsctx, discard_initial_data(rng_fd));
 
 	do_loop(rng_fd, random_fd, arguments->random_step,
 		arguments->poll_timeout ? : -1.0);
