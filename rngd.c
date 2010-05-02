@@ -57,9 +57,7 @@
 #include "rngd_entsource.h"
 #include "rngd_linux.h"
 
-#ifdef HAVE_FLOCK
-#  include <sys/file.h>
-#endif
+#include <sys/file.h>
 
 #define STR(x) #x
 #define PROGNAME "rngd"
@@ -76,7 +74,7 @@ pid_t masterprocess;			/* PID of the master process */
 int am_daemon;				/* Nonzero if we went daemon */
 int exitstatus = EXIT_SUCCESS;		/* Exit status on SIGTERM */
 static FILE *daemon_lockfp = NULL;	/* Lockfile file pointer */
-static int daemon_lockfd;		/* Lockfile file descriptior */
+static int daemon_lockfd;		/* Lockfile file descriptor */
 
 /* Signals */
 volatile int gotsigterm = 0;		/* Received a TERM signal */
@@ -330,34 +328,42 @@ void die(int status)
  */
 static void get_lock(const char* pidfile_name)
 {
-    int otherpid = 0;
+	int otherpid = 0;
+	int r;
 
-    if (!daemon_lockfp) {
-	    if (((daemon_lockfd = open(pidfile_name, O_RDWR|O_CREAT, 0644)) == -1)
+	if (!daemon_lockfp) {
+		if (((daemon_lockfd = open(pidfile_name, O_RDWR|O_CREAT, 0644)) == -1)
 		|| ((daemon_lockfp = fdopen(daemon_lockfd, "r+"))) == NULL) {
-		    message(LOG_ERR, "can't open or create %s", pidfile_name);
+			message(LOG_ERR, "can't open or create %s: %s", 
+			pidfile_name, strerror(errno));
 		   die(EXIT_USAGE);
-    	    }
-    }
+		}
+		fcntl(daemon_lockfd, F_SETFD, 1);
 
-#ifdef HAVE_FLOCK
-    if ( flock(daemon_lockfd, LOCK_EX|LOCK_NB) != 0 ) {
-#else
-    if ( lockf(fileno(daemon_lockfp), F_TLOCK, 0) != 0 ) {
-#endif
-    		rewind(daemon_lockfp);
-		fscanf(daemon_lockfp, "%d", &otherpid);
-		message(LOG_ERR, "can't lock %s, running daemon's pid may be %d",
-		      pidfile_name, otherpid);
-		die(EXIT_USAGE);
-	    }
+		do {
+			r = flock(daemon_lockfd, LOCK_EX|LOCK_NB);
+		} while (r && (errno == EINTR));
 
-    fcntl(daemon_lockfd, F_SETFD, 1);
+		if (r) {
+			if (errno == EWOULDBLOCK) {
+				rewind(daemon_lockfp);
+				fscanf(daemon_lockfp, "%d", &otherpid);
+				message(LOG_ERR,
+					"can't lock %s, running daemon's pid may be %d",
+					pidfile_name, otherpid);
+			} else {
+				message(LOG_ERR,
+					"can't lock %s: %s",
+					pidfile_name, strerror(errno));
+			}
+			die(EXIT_USAGE);
+		}
+	}
 
-    rewind(daemon_lockfp);
-    fprintf(daemon_lockfp, "%d\n", (int) getpid());
-    fflush(daemon_lockfp);
-    ftruncate(fileno(daemon_lockfp), ftell(daemon_lockfp));
+	rewind(daemon_lockfp);
+	fprintf(daemon_lockfp, "%ld\n", (long int) getpid());
+	fflush(daemon_lockfp);
+	ftruncate(fileno(daemon_lockfp), ftell(daemon_lockfp));
 }
 
 /*

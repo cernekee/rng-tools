@@ -70,6 +70,7 @@ static int xread(void *buf, size_t size)
 {
 	size_t off = 0;
 	ssize_t r;
+	char errbuf[STR_BUF_LEN];
 
 	while (size > 0) {
 		do {
@@ -78,7 +79,7 @@ static int xread(void *buf, size_t size)
 		} while ((r == -1) && ((errno == EINTR) || (errno == EAGAIN)));
 		if (r < 0) break;
 		if (r == 0) {
-			message(LOG_ERR, "entropy source signalized EOF!");
+			message(LOG_ERR, "entropy source exhausted!");
 			return -1;
 		}
 		off += r;
@@ -89,8 +90,11 @@ static int xread(void *buf, size_t size)
 	}
 
 	if (size) {
+		strerror_r(errno, errbuf, sizeof(errbuf));
+		errbuf[sizeof(errbuf)-1] = 0;
+
 		message(LOG_ERR, "error reading from entropy source: %s",
-			strerror(errno));
+			errbuf);
 		exitstatus = EXIT_IOERR;
 		return -1;
 	}

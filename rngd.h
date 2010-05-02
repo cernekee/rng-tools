@@ -35,6 +35,7 @@
 #include "stats.h"
 
 #define MAX_RNG_BUFFERS 10
+#define STR_BUF_LEN 1024
 
 /* Command line arguments and processing */
 struct arguments {

@@ -6,9 +6,6 @@
 /* Name of the kernel RNG device */
 #undef DEVRANDOM
 
-/* Define to 1 if you have the `flock' function. */
-#undef HAVE_FLOCK
-
 /* Name of package */
 #undef PACKAGE
 
