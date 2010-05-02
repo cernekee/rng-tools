@@ -40,6 +40,10 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 dnl AC_TYPE_SIZE_T
 dnl AC_TYPE_PID_T
 
+dnl LARGE_FILE support is absolutely required for VIA PadLock support,
+dnl and a good idea anyway.  Turn it off at your own risk...
+AC_SYS_LARGEFILE
+
 dnl -----------------------------
 dnl Checks for required libraries
 dnl -----------------------------
