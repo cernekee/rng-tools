@@ -1,3 +1,11 @@
+rng-tools (2-unofficial-mt.13-1) UNRELEASED; urgency=low
+
+  * New upstream source:
+    + Enable large file support (closes: #506639)
+    + Fix COPYING file to contain the correct license (GPL v2 text)
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Sun, 02 May 2010 21:19:28 -0300
+
 rng-tools (2-unofficial-mt.12-1) unstable; urgency=low
 
   * New upstream source:
