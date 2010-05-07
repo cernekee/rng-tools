@@ -28,7 +28,8 @@ export PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 case "$1" in
   configure)
-  	if [ '!' -c /dev/hwrng ] && [ '!' -c /dev/misc/hwrng ] ; then
+  	if [ '!' -c /dev/hwrng ] && [ '!' -c /dev/misc/hwrng ] && \
+	   [ -x /sbin/MAKEDEV ]; then
 		echo "Trying to create /dev/hwrng device inode..."
 		(cd /dev && /sbin/MAKEDEV hwrng || true)
 	fi
