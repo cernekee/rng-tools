@@ -101,10 +101,6 @@ install: build
 	install -m 644 debian/logcheck.ignore \
 	  $(PKGDIR)/etc/logcheck/violations.ignore.d/rng-tools
 
-	# Install modprobe.d files
-	mkdir -p $(PKGDIR)/etc/modprobe.d
-	install -m 644 debian/$(PACKAGE).modprobe \
-	  $(PKGDIR)/etc/modprobe.d/$(PACKAGE)
 
 	# Install lintian overrides, if any
 	cd debian ; \
