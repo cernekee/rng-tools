@@ -1,7 +1,7 @@
 dnl Process this file with autoconf 2.52+ to produce a configure script.
 dnl
 dnl Copyright (C) 2001 Philipp Rumpf
-dnl Copyright (C) 2004 Henrique de Moraes Holschuh <hmh@debian.org>
+dnl Copyright (C) 2004,2010 Henrique de Moraes Holschuh <hmh@debian.org>
 dnl
 dnl This program is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@ dnl You should have received a copy of the GNU General Public License
 dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-AC_INIT([rng-tools], [2-unofficial-mt.12], [rng-tools@packages.debian.org])
+AC_INIT([rng-tools], [2-unofficial-mt.13], [rng-tools@packages.debian.org])
 AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR([rngd.c])
 AC_CANONICAL_HOST
@@ -39,6 +39,10 @@ dnl AC_CHECK_HEADERS([sys/ioctl.h unistd.h])
 dnl Checks for typedefs, structures, and compiler characteristics.
 dnl AC_TYPE_SIZE_T
 dnl AC_TYPE_PID_T
+
+dnl LARGE_FILE support is absolutely required for VIA PadLock support,
+dnl and a good idea anyway.  Turn it off at your own risk...
+AC_SYS_LARGEFILE
 
 dnl -----------------------------
 dnl Checks for required libraries
@@ -95,7 +99,8 @@ AC_ARG_ENABLE(viapadlock,
 		[Enable suport for VIA PadLock TRNG entropy source (detect)]),
 	[VIADRIVER="$enableval"],
 	[VIADRIVER="no"
-	 AS_IF(test "$host_cpu" == "i586" || test "$host_cpu" == "i686",
+	 AS_IF(test "$host_cpu" == "i586" || test "$host_cpu" == "i686" ||
+	       test "$host_cpu" == "x86_64" ,
 	 	[VIADRIVER="yes"])
 	])
 AC_MSG_CHECKING([whether to include the VIA PadLock TRNG driver])
