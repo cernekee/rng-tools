@@ -1,5 +1,3 @@
-$Id: copyright,v 1.2.2.5 2008-06-10 19:51:37 hmh Exp $
-
 This package was assembled by Henrique de Moraes Holschuh <hmh@debian.org>,
 based on previous work by Viral Shah <viral@debian.org>.
 
@@ -7,15 +5,16 @@ Upstream sources are at: http://sourceforge.net/projects/gkernel/
   (module rng-tools)
 
 The Debian packaging of rng-tools is:
-  Copyright (c) 2003 by Henrique de Moraes Holschuh <hmh@debian.org>,
+  Copyright (c) 2003-2010 by Henrique de Moraes Holschuh <hmh@debian.org>,
   Copyright (c) 2002 by Viral Shah <viral@debian.org>,
-  and distributed in the same license as the upstream source it applies to.
+  and distributed under the same license as the upstream source it applies to.
 
 Changes:
   The Debian version of rngd is extensively patched with added 
-  functionality, courtesy of Henrique de Moraes Holschuh <hmh@debian.org>.
-  All changes are being merged upstream.  See upstream changelog for a
-  list of all changes.
+  functionality and bugs courtesy of Henrique de Moraes Holschuh.
+  All changes were supposed to be proposed to be merged upstream, but the
+  deviation got too large to handle, so it hasn't happened.  See upstream
+  changelog for a list of all changes.
 
 Upstream Authors: 
   Philipp Rumpf, 
@@ -25,7 +24,7 @@ Upstream Authors:
 Copyright:
    Copyright (C) 2001 Philipp Rumpf
    Copyright (C) 2001 Jeff Garzik <jgarzik@pobox.com>
-   Copyright (C) 2004 Henrique de Moraes Holschuh <hmh@debian.org>
+   Copyright (C) 2004-2010 Henrique de Moraes Holschuh <hmh@debian.org>
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the

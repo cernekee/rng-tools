@@ -2,12 +2,14 @@ Source: rng-tools
 Section: utils
 Priority: optional
 Maintainer: Henrique de Moraes Holschuh <hmh@debian.org>
-Build-Depends: debhelper (>> 7), autotools-dev
-Standards-Version: 3.8.0.0
+Build-Depends: debhelper (>> 7), autoconf, automake
+Standards-Version: 3.8.4.0
+Vcs-Browser: http://git.debian.org/?p=users/hmh/rng-tools.git;a=summary
+Vcs-git: git://git.debian.org/users/hmh/rng-tools.git
 
 Package: rng-tools
 Architecture: any
-Depends: ${shlibs:Depends}, makedev (>= 2.3.1-77) | udev (>= 0.053)
+Depends: ${misc:Depends}, ${shlibs:Depends}, udev (>= 0.053) | makedev (>= 2.3.1-77)
 Provides: intel-rng-tools
 Replaces: intel-rng-tools
 Conflicts: intel-rng-tools

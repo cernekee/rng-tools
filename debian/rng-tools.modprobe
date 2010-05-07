@@ -1,3 +1,0 @@
-alias char-major-10-183 hw_random
-alias /dev/hwrng hw_random
-alias /dev/misc/hwrng hw_random
