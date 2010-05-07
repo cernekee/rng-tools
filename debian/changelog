@@ -1,3 +1,10 @@
+rng-tools (2-unofficial-mt.13-2) unstable; urgency=low
+
+  * Use DEB_BUILD_ARCH to detect if we should force VIA PadLock support
+    (closes: #580843)
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Thu, 13 May 2010 22:33:25 -0300
+
 rng-tools (2-unofficial-mt.13-1) unstable; urgency=low
 
   * New upstream source:
