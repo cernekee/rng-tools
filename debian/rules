@@ -4,26 +4,18 @@
 # Copyright (c) 2003,2004 by Henrique de Moraes Holschuh
 # Published under the GNU GPL license
 # Based on previous work by Viral Shah <viral@debian.org>.
-#
-# $Id: rules,v 1.3.2.15 2008-06-19 03:02:21 hmh Exp $
 
 PACKAGE:=rng-tools
 PKGDIR:=$(CURDIR)/debian/$(PACKAGE)
 
 # DebHelper control
-export DH_ALWAYS_EXCLUDE=CVS
+export DH_ALWAYS_EXCLUDE=CVS:.svn:.git
 
 export DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 export DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
-DEBUGFLAGS=-g
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	DEBUGFLAGS += -O0
-else
-	DEBUGFLAGS += -O2
-endif
 ifneq (,$(findstring strict,$(DEB_BUILD_OPTIONS)))
-	DEBUGFLAGS += -Werror
+	CFLAGS += -Werror
 endif
 
 confflags=
@@ -40,55 +32,51 @@ ifneq (,$(findstring i386,$(DEB_BUILD_GNU_TYPE)))
 	confflags += --enable-viapadlock
 endif
 
-configure:
+build-prepare: build-prepare-stamp
+build-prepare-stamp:
+	@dh_testdir
 	./autogen.sh
+	touch build-prepare-stamp
 
-configure-stamp:
+configure-stamp: | build-prepare
 	dh_testdir
 
-	rm -rf autom4te.cache
-	rm -f config.sub config.guess
-	ln -s /usr/share/misc/config.sub config.sub
-	ln -s /usr/share/misc/config.guess config.guess
-
-	rm -rf config.log config.cache
-	./configure CFLAGS="-Wall -pipe $(DEBUGFLAGS)" \
+	./configure CFLAGS="$(CFLAGS) -Wall -pipe" $(confflags)\
 	  --prefix=/usr \
 	  --mandir=\$${prefix}/share/man \
 	  --infodir=\$${prefix}/share/info
 
 	touch configure-stamp
 
-build: configure-stamp build-stamp
-build-stamp:
+build: build-stamp
+build-stamp: configure-stamp
 	dh_testdir
 
 	$(MAKE)
 
 	touch build-stamp
 
-clean:	configure
+clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp configure-stamp
 	rm -rf autom4te.cache
 
-	rm -f config.sub config.guess
-	ln -s /usr/share/misc/config.sub config.sub
-	ln -s /usr/share/misc/config.guess config.guess
-
-	[ ! -f Makefile ] || $(MAKE) clean
 	[ ! -f Makefile ] || $(MAKE) distclean
 
-	rm -f config.sub config.guess
-	rm -rf config.log config.cache
+	rm -f config.sub config.guess configure config.log
+	rm -fr autom4te.cache
+
+	rm -f Makefile.in aclocal.m4 contrib/Makefile.in 
+	rm -f Makefile contrib/Makefile
+	rm -f depcomp install-sh missing rng-tools-config.h.in
 
 	dh_clean
 
 install: build
 	dh_testdir
 	dh_testroot
-	dh_clean -k
+	dh_prep
 	dh_installdirs
 
 	$(MAKE) install DESTDIR=$(PKGDIR)
@@ -147,4 +135,4 @@ binary-arch: build install
 	dh_builddeb
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install
+.PHONY: build clean binary-indep binary-arch binary install build-prepare
