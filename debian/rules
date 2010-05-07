@@ -1,8 +1,8 @@
 #!/usr/bin/make -f
 # debian/rules for rng-tools
 # GNU copyright 1997 to 1999 by Joey Hess.
-# Copyright (c) 2003,2004 by Henrique de Moraes Holschuh
-# Published under the GNU GPL license
+# Copyright (c) 2003-2010 by Henrique de Moraes Holschuh
+# Published under the GNU GPL license version 2 or any later versions
 # Based on previous work by Viral Shah <viral@debian.org>.
 
 PACKAGE:=rng-tools
