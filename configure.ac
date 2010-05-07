@@ -99,7 +99,8 @@ AC_ARG_ENABLE(viapadlock,
 		[Enable suport for VIA PadLock TRNG entropy source (detect)]),
 	[VIADRIVER="$enableval"],
 	[VIADRIVER="no"
-	 AS_IF(test "$host_cpu" == "i586" || test "$host_cpu" == "i686",
+	 AS_IF(test "$host_cpu" == "i586" || test "$host_cpu" == "i686" ||
+	       test "$host_cpu" == "x86_64" ,
 	 	[VIADRIVER="yes"])
 	])
 AC_MSG_CHECKING([whether to include the VIA PadLock TRNG driver])
