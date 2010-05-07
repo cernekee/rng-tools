@@ -3,7 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: Henrique de Moraes Holschuh <hmh@debian.org>
 Build-Depends: debhelper (>> 7), autoconf, automake
-Standards-Version: 3.8.0.0
+Standards-Version: 3.8.4.0
 Vcs-Browser: http://git.debian.org/?p=users/hmh/rng-tools.git;a=summary
 Vcs-git: git://git.debian.org/users/hmh/rng-tools.git
 
