@@ -90,15 +90,6 @@ install: build
 	  $(PKGDIR)/etc/logcheck/violations.ignore.d/rng-tools
 
 
-	# Install lintian overrides, if any
-	cd debian ; \
-	for i in *.lintian ; do \
-	    [ -r "$$i" ] && { \
-		mkdir -p "$${i%%.lintian}/usr/share/lintian/overrides" ;\
-		install  -m 644 "$$i" "$${i%%.lintian}/usr/share/lintian/overrides/$${i%%.lintian}" ;\
-	    } ;\
-	done
-
 # Build architecture-independent files here.
 binary-indep: build install
 # We have nothing to do by default.
@@ -122,6 +113,7 @@ binary-arch: build install
 #	dh_installinfo
 #	dh_undocumented
 	dh_installchangelogs ChangeLog
+	dh_lintian
 	dh_link
 	dh_strip
 	dh_compress
