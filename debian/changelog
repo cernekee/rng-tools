@@ -1,3 +1,9 @@
+rng-tools (2-unofficial-mt.13-3) unstable; urgency=low
+
+  * Re-upload to fix problem caused by a bad i386 chroot on the -2 build
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Thu, 13 May 2010 23:24:00 -0300
+
 rng-tools (2-unofficial-mt.13-2) unstable; urgency=low
 
   * Use DEB_BUILD_ARCH to detect if we should force VIA PadLock support
