@@ -11,8 +11,9 @@ PKGDIR:=$(CURDIR)/debian/$(PACKAGE)
 # DebHelper control
 export DH_ALWAYS_EXCLUDE=CVS:.svn:.git
 
-export DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-export DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_BUILD_ARCH     ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH)
+DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
 ifneq (,$(findstring strict,$(DEB_BUILD_OPTIONS)))
 	CFLAGS += -Werror
@@ -26,9 +27,8 @@ else
 	confflags += --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
 endif
 
-# Detect ix86 and enable VIA PadLock support
-# Debian uses i386. i586 and i686 are handled upstream
-ifneq (,$(findstring i386,$(DEB_BUILD_GNU_TYPE)))
+# Detect i386/i486 and force-enable VIA PadLock support
+ifneq (,$(findstring i386,$(DEB_BUILD_ARCH)))
 	confflags += --enable-viapadlock
 endif
 
