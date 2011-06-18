@@ -59,15 +59,22 @@ kernel_mode_t kernel_mode( void ) {
 	long i;
 	char *p, *q;
 
-	if (uname(&buf)) return KERNEL_UNSUPPORTED;
+	if (uname(&buf))
+		return KERNEL_UNSUPPORTED;
+
 	if (!strncmp(buf.sysname, "Linux", 6)) {
 		i = strtol(buf.release, &p, 10); /* Major version */
-		if ((i != 2) || *p != '.') return KERNEL_UNSUPPORTED;
+		if ((i < 2) || *p != '.')
+			return KERNEL_UNSUPPORTED;
+		if (i > 2)
+			return KERNEL_LINUX_26;
 		p++;
 		q = p;
 		i = strtol(p, &q, 10);	/* Minor version */
-		if (p == q || *q != '.' || i < 4) return KERNEL_UNSUPPORTED;
-		if (i < 6) return KERNEL_LINUX_24;
+		if (p == q || *q != '.' || i < 4)
+			return KERNEL_UNSUPPORTED;
+		if (i < 6)
+			return KERNEL_LINUX_24;
 		return KERNEL_LINUX_26;
 	}
 	return KERNEL_UNSUPPORTED;
