@@ -1,3 +1,7 @@
+Fri Jun 17 2011  Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+	* Work around CPU errata: Nano xstore corrupts memory
+	* Support kernels 3.0 and later
+
 Sun May 02 2010  Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 	* enable LARGE_FILE support, otherwise the VIA Padlock code
 	  won't work, thanks to Janis Hamme <anmeldung37@arcor.de>
