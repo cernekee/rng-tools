@@ -1,3 +1,11 @@
+rng-tools (2-unofficial-mt.14-1) unstable; urgency=low
+
+  * New upstream version:
+    + Work around VIA Nano xstore bug (closes: #609289)
+    + Add support for Linux 3.0 (closes: #630771)
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Sat, 18 Jun 2011 00:12:54 -0300
+
 rng-tools (2-unofficial-mt.13-3) unstable; urgency=low
 
   * Re-upload to fix problem caused by a bad i386 chroot on the -2 build
