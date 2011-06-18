@@ -475,7 +475,17 @@ static inline uint32_t via_xstore(uint64_t *addr, uint32_t edx_in)
  */
 ssize_t viapadlock_rng_read(void* buf, size_t size)
 {
-	static uint64_t xstore_buffer;	/* cannot be in the stack */
+	/*
+	 * Some VIA CPUs can write too much data to the buffer,
+	 * overruning data.  This is an absurdly dangerous bug,
+	 * so better alocate an entire cacheline or two in case
+	 * VIA will screw this up again even worse.
+	 *
+	 * Needs 16-byte alignment, must be static, must be at least
+	 * 16-byte long.
+	 */
+	static uint64_t xstore_buffer[16] __attribute__((aligned (16)));
+
 	size_t bytes_read = 0;
 	uint32_t xstore_divisor, xstore_flags;
 	unsigned int s, i;
@@ -501,7 +511,7 @@ ssize_t viapadlock_rng_read(void* buf, size_t size)
 	while (size > 0) {
 		for (i = 0; i < 2; i++) {
 			/* Use XSTORE to get RNG data and current config */
-			xstore_flags = via_xstore(&xstore_buffer, 
+			xstore_flags = via_xstore(xstore_buffer,
 					xstore_divisor);
 
 			/* Make sure no one messed with the RNG */
