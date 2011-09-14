@@ -1,3 +1,11 @@
+rng-tools (2-unofficial-mt.14-1~60squeeze1) stable; urgency=low
+
+  * Debian 6.0 (Squeeze) backport to fix important bugs in Debian stable
+    (closes: #609289, #630771)
+    + No changes from 2-unofficial-mt.14-1
+
+ -- Henrique de Moraes Holschuh <hmh@debian.org>  Wed, 14 Sep 2011 11:16:19 -0300
+
 rng-tools (2-unofficial-mt.14-1) unstable; urgency=low
 
   * New upstream version:
