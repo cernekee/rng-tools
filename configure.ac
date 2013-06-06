@@ -95,6 +95,8 @@ dnl -----------------
 dnl Configure options
 dnl -----------------
 
+AM_PROG_AS
+
 SYSLOG_FACILITY=LOG_DAEMON
 AC_ARG_WITH([syslogfacility],
 	[AS_HELP_STRING([--with-syslogfacility=FACILITY],

@@ -14,7 +14,8 @@ rngd_SOURCES	= $(common_sources) rngd.h rngd.c \
 		  rngd_threads.h rngd_threads.c \
 		  rngd_signals.h rngd_signals.c \
 		  rngd_entsource.h rngd_entsource.c \
-		  rngd_linux.h rngd_linux.c
+		  rngd_linux.h rngd_linux.c \
+		  rngd_rdrand.c rdrand_asm.S
 rngd_LDADD	= librngd.a @LIB_PTHREAD@
 
 rngtest_SOURCES	= $(common_sources) rngtest.c
