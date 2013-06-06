@@ -268,6 +268,8 @@ static struct trng_params trng_parameters[] = {
 	{ NULL },
 };
 
+struct rng *rng_list;
+
 /*
  * command line processing
  */
