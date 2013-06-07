@@ -11,6 +11,11 @@ endif
 override_dh_auto_configure:
 	dh_auto_configure -- $(confflags)
 
+# the init script will fail if no HW RNG exists; if this happens we don't
+# want dpkg to think the package installation failed
+override_dh_installinit:
+	dh_installinit --error-handler=true
+
 override_dh_installdocs:
 	dh_installdocs README
 
