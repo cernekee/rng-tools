@@ -1,3 +1,17 @@
+rng-tools (2-unofficial-mt.15-0.1) UNRELEASED; urgency=low
+
+  * Non-maintainer upload.
+  * New upstream version:
+    + Add RDRAND support (closes: #692450)
+    + Fix a couple of spelling errors
+  * Debian build-system updates:
+    + Add libgcrypt dependency
+    + Switch to debhelper V9 mode
+    + Use standard debhelper rules where possible
+    + Fix several lintian warnings
+
+ -- Kevin Cernekee <cernekee@gmail.com>  Thu, 06 Jun 2013 20:27:12 -0700
+
 rng-tools (2-unofficial-mt.14-1) unstable; urgency=low
 
   * New upstream version:
