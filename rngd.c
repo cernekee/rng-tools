@@ -185,6 +185,9 @@ static struct argp_option options[] = {
 	  "(default: 50%), "
 	  "0 <= n <= kernel random pool size, or 0% <= n <= 100%" },
 
+	{ "no-drng", 'd', "1|0", 0,
+	  "Do not use drng as a source of random number input (default: 0)" },
+
 	{ 0 },
 };
 static struct arguments default_arguments = {
@@ -196,6 +199,7 @@ static struct arguments default_arguments = {
 	.fill_watermark = -50,
 	.rng_timeout	= 10,
 	.daemon		= 1,
+	.enable_drng	= 1,
 	.rng_entropy	= 1.0,
 	.rng_buffers	= 3,
 	.rng_quality	= 0,
@@ -415,6 +419,15 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 		break;
 	}
 
+	case 'd': {
+		int n;
+		if ((sscanf(arg,"%i", &n) == 0) || ((n | 1)!=1))
+			argp_usage(state);
+		else
+			arguments->enable_drng = !n;
+		break;
+	}
+
 	case ARGP_RNGD_CMDLINE_HRNG: {	/* --hrng */
 		int i = 0;
 		if (strcasecmp(arg, "help") == 0) {
@@ -476,6 +489,12 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 	return 0;
 }
 static struct argp argp = { options, parse_opt, NULL, doc };
+
+static struct rng rng_drng = {
+	.rng_name	= "drng",
+	.rng_fd  	= -1,
+	.xread  	= xread_drng,
+};
 
 /*
  * Daemon needs
@@ -674,7 +693,11 @@ int main(int argc, char **argv)
 	init_sighandlers();
 
 	/* Init entropy source */
-	init_entropy_source();
+	if (!arguments->enable_drng ||
+	    init_drng_entropy_source(&rng_drng) != 0) {
+		arguments->enable_drng = 0;
+		init_entropy_source();
+	}
 
 	/* Init entropy sink */
 	init_kernel_rng();

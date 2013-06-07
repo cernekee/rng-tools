@@ -266,7 +266,12 @@ static void rng_data_source_work(int i, struct timeval *start,
 		struct timeval *stop)
 {
 	gettimeofday (start, 0);
-	if (xread(rng_buf[i], FIPS_RNG_BUFFER_SIZE, 0) == -1) {
+	if (arguments->enable_drng) {
+		if (xread_drng(rng_buf[i], FIPS_RNG_BUFFER_SIZE, NULL)) {
+			kill(masterprocess, SIGTERM);
+			pthread_exit(NULL);
+		}
+	} else if (xread(rng_buf[i], FIPS_RNG_BUFFER_SIZE, 0) == -1) {
 		/* any errors are likely to be permanent. kill rngd */
 		kill(masterprocess, SIGTERM);
 		pthread_exit(NULL);

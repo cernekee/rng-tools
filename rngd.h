@@ -59,6 +59,7 @@ struct arguments {
 	int rng_quality;	/* 0: default, 1=low, 2=med, 3=high */
 	
 	int daemon;
+	int enable_drng;
 
 	double rng_entropy;
 	int rng_buffers;
