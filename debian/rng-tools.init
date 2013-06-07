@@ -47,18 +47,18 @@ finddevice () {
 			return 0
 		fi
 	done
-
-	echo "(Hardware RNG device inode not found)"
-	echo "$0: Cannot find a hardware RNG device to use." >&2
-	exit 1
+	return 1
 }
 
 START="--start --quiet --pidfile ${PIDFILE} --startas ${DAEMON} --name ${NAME}"
 case "$1" in
   start)
 	echo -n "Starting $DESC: "
-	finddevice
-	START="${START} -- -r ${HRNGDEVICE} ${RNGDOPTIONS}"
+	if finddevice; then
+		START="${START} -- -r ${HRNGDEVICE} ${RNGDOPTIONS}"
+	else
+		START="${START} -- ${RNGDOPTIONS}"
+	fi
 	if start-stop-daemon ${START} >/dev/null 2>&1 ; then
 		echo "${NAME}."
 	else
