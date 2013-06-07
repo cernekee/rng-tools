@@ -9,7 +9,7 @@ Vcs-git: git://git.debian.org/users/hmh/rng-tools.git
 
 Package: rng-tools
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, udev (>= 0.053) | makedev (>= 2.3.1-77)
+Depends: ${misc:Depends}, ${shlibs:Depends}, udev (>= 0.053) | makedev (>= 2.3.1-77), lsb-base (>= 3.2-14)
 Provides: intel-rng-tools
 Replaces: intel-rng-tools
 Conflicts: intel-rng-tools

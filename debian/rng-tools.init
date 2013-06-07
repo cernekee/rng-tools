@@ -29,6 +29,8 @@ RNGDOPTIONS=
 
 test -f ${DAEMON} || exit 0
 
+. /lib/lsb/init-functions
+
 set -e
 
 finddevice () {
@@ -87,8 +89,12 @@ case "$1" in
 	$0 stop
 	exec $0 start	    
 	;;
+  status)
+	status_of_proc -p ${PIDFILE} ${DAEMON} ${NAME}
+	exit $? # notreached due to set -e
+	;;
   *)
-	echo "Usage: $0 {start|stop|restart|force-reload}" 1>&2
+	echo "Usage: $0 {start|stop|restart|force-reload|status}" 1>&2
 	exit 1
 	;;
 esac
