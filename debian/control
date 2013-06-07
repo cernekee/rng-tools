@@ -2,8 +2,8 @@ Source: rng-tools
 Section: utils
 Priority: optional
 Maintainer: Henrique de Moraes Holschuh <hmh@debian.org>
-Build-Depends: debhelper (>> 7), autoconf, automake
-Standards-Version: 3.8.4.0
+Build-Depends: debhelper (>= 9), dh-autoreconf, libgcrypt11-dev
+Standards-Version: 3.9.4
 Vcs-Browser: http://git.debian.org/?p=users/hmh/rng-tools.git;a=summary
 Vcs-git: git://git.debian.org/users/hmh/rng-tools.git
 
