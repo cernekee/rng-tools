@@ -152,7 +152,7 @@ static struct argp_option options[] = {
 
 	{ "hrng", ARGP_RNGD_CMDLINE_HRNG, "name", 0,
 	  "Selects known-good defaults for rng-driver, rng-timeout and "
-	  "rng-entropy, for a given TRNG. These can be overriden by specifying "
+	  "rng-entropy, for a given TRNG. These can be overridden by specifying "
 	  "one of those options explicitly. Use --hrng=help to get a list of "
 	  "known TRNGs" },
 
