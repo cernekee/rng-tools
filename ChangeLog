@@ -1,3 +1,8 @@
+Thu Jun 06 2013  Kevin Cernekee <cernekee@gmail.com>
+	* Add RDRAND support
+	* Fix compile warnings
+	* Fix spelling errors
+
 Fri Jun 17 2011  Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 	* Work around CPU errata: Nano xstore corrupts memory
 	* Support kernels 3.0 and later

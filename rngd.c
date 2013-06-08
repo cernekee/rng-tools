@@ -152,7 +152,7 @@ static struct argp_option options[] = {
 
 	{ "hrng", ARGP_RNGD_CMDLINE_HRNG, "name", 0,
 	  "Selects known-good defaults for rng-driver, rng-timeout and "
-	  "rng-entropy, for a given TRNG. These can be overriden by specifying "
+	  "rng-entropy, for a given TRNG. These can be overridden by specifying "
 	  "one of those options explicitly. Use --hrng=help to get a list of "
 	  "known TRNGs" },
 
@@ -185,6 +185,9 @@ static struct argp_option options[] = {
 	  "(default: 50%), "
 	  "0 <= n <= kernel random pool size, or 0% <= n <= 100%" },
 
+	{ "no-drng", 'd', "1|0", 0,
+	  "Do not use drng as a source of random number input (default: 0)" },
+
 	{ 0 },
 };
 static struct arguments default_arguments = {
@@ -196,6 +199,7 @@ static struct arguments default_arguments = {
 	.fill_watermark = -50,
 	.rng_timeout	= 10,
 	.daemon		= 1,
+	.enable_drng	= 1,
 	.rng_entropy	= 1.0,
 	.rng_buffers	= 3,
 	.rng_quality	= 0,
@@ -267,6 +271,8 @@ static struct trng_params trng_parameters[] = {
 	},
 	{ NULL },
 };
+
+struct rng *rng_list;
 
 /*
  * command line processing
@@ -413,6 +419,15 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 		break;
 	}
 
+	case 'd': {
+		int n;
+		if ((sscanf(arg,"%i", &n) == 0) || ((n | 1)!=1))
+			argp_usage(state);
+		else
+			arguments->enable_drng = !n;
+		break;
+	}
+
 	case ARGP_RNGD_CMDLINE_HRNG: {	/* --hrng */
 		int i = 0;
 		if (strcasecmp(arg, "help") == 0) {
@@ -474,6 +489,12 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 	return 0;
 }
 static struct argp argp = { options, parse_opt, NULL, doc };
+
+static struct rng rng_drng = {
+	.rng_name	= "drng",
+	.rng_fd  	= -1,
+	.xread  	= xread_drng,
+};
 
 /*
  * Daemon needs
@@ -560,9 +581,9 @@ static void get_lock(const char* pidfile_name)
 		if (r) {
 			if (errno == EWOULDBLOCK) {
 				rewind(daemon_lockfp);
-				fscanf(daemon_lockfp, "%d", &otherpid);
-				message(LOG_ERR,
-					"can't lock %s, running daemon's pid may be %d",
+				if (fscanf(daemon_lockfp, "%d", &otherpid) == 1)
+					message(LOG_ERR,
+						"can't lock %s, running daemon's pid may be %d",
 					pidfile_name, otherpid);
 			} else {
 				message_strerr(LOG_ERR, errno,
@@ -575,7 +596,8 @@ static void get_lock(const char* pidfile_name)
 	rewind(daemon_lockfp);
 	fprintf(daemon_lockfp, "%ld\n", (long int) getpid());
 	fflush(daemon_lockfp);
-	ftruncate(fileno(daemon_lockfp), ftell(daemon_lockfp));
+	if (ftruncate(fileno(daemon_lockfp), ftell(daemon_lockfp)) < 0)
+		message(LOG_WARNING, "Warning: can't truncate pidfile\n");
 }
 
 
@@ -600,47 +622,48 @@ static void dump_rng_stats(void)
 	char buf[256];
 
 	pthread_mutex_lock(&rng_stats.group1_mutex);
-	message(LOG_INFO, dump_stat_counter(buf, sizeof(buf),
+	message(LOG_INFO, "%s", dump_stat_counter(buf, sizeof(buf),
 			"bits received from HRNG source",
 			rng_stats.bytes_received * 8));
 	pthread_mutex_unlock(&rng_stats.group1_mutex);
 	pthread_mutex_lock(&rng_stats.group3_mutex);
-	message(LOG_INFO, dump_stat_counter(buf, sizeof(buf),
+	message(LOG_INFO, "%s", dump_stat_counter(buf, sizeof(buf),
 			"bits sent to kernel pool",
 			rng_stats.bytes_sent * 8));
-	message(LOG_INFO, dump_stat_counter(buf, sizeof(buf),
+	message(LOG_INFO, "%s", dump_stat_counter(buf, sizeof(buf),
 			"entropy added to kernel pool",
 			rng_stats.entropy_sent));
 	pthread_mutex_unlock(&rng_stats.group3_mutex);
 	pthread_mutex_lock(&rng_stats.group2_mutex);
-	message(LOG_INFO, dump_stat_counter(buf, sizeof(buf),
+	message(LOG_INFO, "%s", dump_stat_counter(buf, sizeof(buf),
 			"FIPS 140-2 successes",
 			rng_stats.good_fips_blocks));
-	message(LOG_INFO, dump_stat_counter(buf, sizeof(buf),
+	message(LOG_INFO, "%s", dump_stat_counter(buf, sizeof(buf),
 			"FIPS 140-2 failures",
 			rng_stats.bad_fips_blocks));
 	for (j = 0; j < N_FIPS_TESTS; j++)
-		message(LOG_INFO, dump_stat_counter(buf, sizeof(buf), fips_test_names[j],
-				rng_stats.fips_failures[j]));
+		message(LOG_INFO, "%s",
+			dump_stat_counter(buf, sizeof(buf), fips_test_names[j],
+			rng_stats.fips_failures[j]));
 	pthread_mutex_unlock(&rng_stats.group2_mutex);
 	pthread_mutex_lock(&rng_stats.group1_mutex);
-	message(LOG_INFO, dump_stat_bw(buf, sizeof(buf),
+	message(LOG_INFO, "%s", dump_stat_bw(buf, sizeof(buf),
 			"HRNG source speed", "bits",
 			&rng_stats.source_blockfill, FIPS_RNG_BUFFER_SIZE*8));
 	pthread_mutex_unlock(&rng_stats.group1_mutex);
 	pthread_mutex_lock(&rng_stats.group2_mutex);
-	message(LOG_INFO, dump_stat_bw(buf, sizeof(buf),
+	message(LOG_INFO, "%s", dump_stat_bw(buf, sizeof(buf),
 			"FIPS tests speed", "bits",
 			&rng_stats.fips_blockfill, FIPS_RNG_BUFFER_SIZE*8));
 	pthread_mutex_unlock(&rng_stats.group2_mutex);
 	pthread_mutex_lock(&rng_stats.group3_mutex);
-	message(LOG_INFO, dump_stat_counter(buf, sizeof(buf),
+	message(LOG_INFO, "%s", dump_stat_counter(buf, sizeof(buf),
 			"Lowest ready-buffers level",
 			rng_stats.buffer_lowmark));
-	message(LOG_INFO, dump_stat_counter(buf, sizeof(buf),
+	message(LOG_INFO, "%s", dump_stat_counter(buf, sizeof(buf),
 			"Entropy starvations",
 			rng_stats.sink_starved));
-	message(LOG_INFO, dump_stat_stat(buf, sizeof(buf),
+	message(LOG_INFO, "%s", dump_stat_stat(buf, sizeof(buf),
 			"Time spent starving for entropy",
 			"us",
 			&rng_stats.sink_wait));
@@ -672,7 +695,11 @@ int main(int argc, char **argv)
 	init_sighandlers();
 
 	/* Init entropy source */
-	init_entropy_source();
+	if (!arguments->enable_drng ||
+	    init_drng_entropy_source(&rng_drng) != 0) {
+		arguments->enable_drng = 0;
+		init_entropy_source();
+	}
 
 	/* Init entropy sink */
 	init_kernel_rng();

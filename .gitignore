@@ -1,4 +1,27 @@
+# generated files
 config.sub
 config.guess
 aclocal.m4
 configure
+INSTALL
+Makefile.in
+contrib/Makefile.in
+depcomp
+install-sh
+missing
+rng-tools-config.h.in*
+autom4te.cache/
+.deps/
+Makefile
+config.log
+config.status
+contrib/Makefile
+rng-tools-config.h
+rngd.8
+rngtest.1
+stamp-h1
+
+# objects
+*.[oa]
+rngd
+rngtest

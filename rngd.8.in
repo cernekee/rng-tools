@@ -21,6 +21,7 @@ device) to an entropy sink (e.g. kernel entropy pool)
 [\fB\-o\fR \fIfile\fR | \fB\-\-random-device=\fIfile\fR]
 [\fB\-s\fR \fIn\fR | \fB\-\-random-step=\fIn\fR]
 [\fB\-W\fR \fIn\fR | \fB\-\-fill-watermark=\fIn[%]\fR]
+[\fB\-d\fR, \fB\-\-no-drng=\fI1|0\fR]
 [\fB\-t\fR \fIn\fR | \fB\-\-feed-interval=\fIn\fR]
 [\fB\-?\fR] [\fB\-\-help\fR]
 [\fB\-V\fR] [\fB\-\-version\fR]
@@ -72,7 +73,7 @@ number of buffers used by \fIrngd\fR.  Each buffer holds a block of 20000 bits
 of data, which will be either approved or discarded by the FIPS tests.  
 Decreasing the number of buffers below 3 can degrade rngd's performance.  
 Increasing it above 3 will only help if you have very big bursts of entropy
-usage that a larger number of buffers can accomodate.
+usage that a larger number of buffers can accommodate.
 
 .SH OPTIONS
 .TP
@@ -128,6 +129,9 @@ Setting this too high will cause \fIrngd\fR to dominate the contents of the
 entropy pool.  Low values will hurt system performance during entropy 
 starves.  \fIfill-watermark\fR can be specified either as an absolute number
 of bits, or as a percentage of the total size of the entropy pool.
+.TP
+\fB\-d\fI 1|0\fR, \fB\-\-no-drng=\fI1|0\fR
+Do not use drng as a source of random number input (default:0)
 .TP
 \fB\-t\fI n\fR, \fB\-\-feed-interval=\fIn\fR (default: 60)
 If \fIfeed-interval\fR is not zero, \fIrngd\fR will force-feed entropy to the

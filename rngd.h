@@ -59,6 +59,7 @@ struct arguments {
 	int rng_quality;	/* 0: default, 1=low, 2=med, 3=high */
 	
 	int daemon;
+	int enable_drng;
 
 	double rng_entropy;
 	int rng_buffers;
@@ -66,6 +67,17 @@ struct arguments {
 	entropy_source_driver_t rng_driver;
 };
 extern struct arguments *arguments;
+
+/* structures to store rng information */
+struct rng {
+	char *rng_name;
+	int rng_fd;
+
+	int (*xread) (void *buf, size_t size, struct rng *ent_src);
+	fips_ctx_t *fipsctx;
+
+	struct rng *next;
+};
 
 /* Statistics */
 struct rng_stats {
@@ -119,5 +131,7 @@ extern void message_strerr(int priority, int errornumber,
  * */
 extern void die(int status)
 	__attribute__ ((noreturn));
+
+extern void src_list_add(struct rng *ent_src);
 
 #endif /* RNGD__H */

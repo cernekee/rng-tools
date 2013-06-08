@@ -40,6 +40,10 @@ extern const char *entropy_source_driver_name(entropy_source_driver_t driver);
  */
 extern void init_entropy_source( void );
 
+/* Read data from the entropy source */
+struct rng;
+extern int xread_drng(void *buf, size_t size, struct rng *ent_src);
+
 /*
  * RNG data source thread
  *
